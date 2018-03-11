@@ -4,6 +4,7 @@ import app_kvServer.Cache.*;
 
 import common.module.ServerThread;
 import ecs.ECSNode;
+import ecs.IECSNode;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 
