@@ -191,11 +191,11 @@ public class ECS {
     public void notifyPrecessor(Collection<IECSNode> serversTaken) {
         TreeSet<IECSNode> tmp = (TreeSet<IECSNode>) this.serverRepoTaken.clone();
         tmp.removeAll(serversTaken);
-        Iterator itr1 = serverRepo.iterator();
+        Iterator itr1 = serversTaken.iterator();
         ECSNode node1 = null;
         ECSNode smallerNode;
         ECSNode largerNode;
-        while (itr1.hasNext()) {
+        while (itr1.hasNext() && tmp.size() > 0) {
             smallerNode = null;
             largerNode = null;
             node1 = (ECSNode) itr1.next();
