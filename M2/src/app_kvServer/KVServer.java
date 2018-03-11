@@ -386,7 +386,7 @@ public class KVServer implements IKVServer {
             logger.info("Start transer data");
             while (it.hasNext()) {
                 Map.Entry<String, String> pair = (Map.Entry) it.next();
-                zkWatch.moveData(pair.getKey(), pair.getValue());
+                zkWatch.moveData(pair.getKey(), pair.getValue(), targetName);
             }
 
             logger.info("Start removing data");

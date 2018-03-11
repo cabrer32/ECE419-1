@@ -129,7 +129,7 @@ public class KVServerWatcher {
     public String readData(String path, Watcher watcher) {
         try {
             String data = new String(this.zk.getData(path, watcher, null));
-            logger.info("Successfully read Node from " + path + "  data: " + data);
+            logger.info("Successfully read Node from " + path);
             return data;
         } catch (Exception e) {
             logger.error("Failed to read Node from " + path);
@@ -254,7 +254,7 @@ public class KVServerWatcher {
                 if (keeperState == KeeperState.SyncConnected) {
                     switch (eventType) {
                         case NodeDataChanged:
-                            logger.info("metadata is changed.");
+                            logger.info("NODE metadata is changed.");
                             String data = readData(path, this);
 
                             updateServer(parseJsonObject(data));
@@ -303,7 +303,6 @@ public class KVServerWatcher {
                                 logger.info("Irrelevant");
                                 return;
                             }
-
                             logger.info("Ack received  ");
 
                             if (dataSemaphore != null)

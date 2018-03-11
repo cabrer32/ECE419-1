@@ -18,19 +18,28 @@ import java.util.concurrent.TimeUnit;
 
 public class ZooKeeperWatcher implements Watcher {
 
-    /** zookeeper  */
+    /**
+     * zookeeper
+     */
     private ZooKeeper zk = null;
     private static final String PARENT_PATH = "/ecs";
-    /** zk children path */
+    /**
+     * zk children path
+     */
     private static final String CHILDREN_PATH = "/ecs/";
-    /** signal to complete zookeeper creation */
+    /**
+     * signal to complete zookeeper creation
+     */
     private CountDownLatch connectedSemaphore;
-    /** logger */
-    private static Logger logger =  Logger.getRootLogger();
+    /**
+     * logger
+     */
+    private static Logger logger = Logger.getRootLogger();
 
     /**
      * Create ZooKeeper connection
-     * @param connectAddr zookeeper address
+     *
+     * @param connectAddr    zookeeper address
      * @param sessionTimeout session timeout
      */
     public void createConnection(String connectAddr, int sessionTimeout) {
@@ -64,7 +73,7 @@ public class ZooKeeperWatcher implements Watcher {
     public boolean createPath(String path, String data) {
         try {
             Stat stat = this.zk.exists(path, false);
-            if(stat == null){
+            if (stat == null) {
                 this.zk.create(path, data.getBytes(), Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
                 logger.info("Successfully create new node " + path);
             }
@@ -82,7 +91,7 @@ public class ZooKeeperWatcher implements Watcher {
     public String readData(String path, boolean needWatch) {
         try {
             String data = new String(this.zk.getData(path, needWatch, null));
-            logger.info("Successfully read Node from "+ path + "  data: " + data);
+            logger.info("Successfully read Node from " + path + "  data: " + data);
             return data;
         } catch (Exception e) {
             logger.error("Failed to read Node from " + path);
@@ -99,7 +108,7 @@ public class ZooKeeperWatcher implements Watcher {
             this.zk.setData(path, data.getBytes(), -1);
             logger.info("Successfully update Node at " + path);
         } catch (Exception e) {
-            logger.error("Failed to update Node at "+ path);
+            logger.error("Failed to update Node at " + path);
             logger.error(e);
             return false;
         }
@@ -107,14 +116,14 @@ public class ZooKeeperWatcher implements Watcher {
     }
 
     /**
-     *  delete node
+     * delete node
      */
     public boolean deleteNode(String path) {
         try {
             this.zk.delete(path, -1);
             logger.info("Successfully delete Node at " + path);
         } catch (Exception e) {
-            logger.error("Failed to delete Node at "+ path);
+            logger.error("Failed to delete Node at " + path);
             logger.error(e.getMessage());
             return false;
         }
@@ -135,6 +144,7 @@ public class ZooKeeperWatcher implements Watcher {
 
     /**
      * 获取子节点
+     *
      * @param path 节点路径
      */
     private List<String> getChildren(String path, boolean needWatch) {
@@ -172,9 +182,8 @@ public class ZooKeeperWatcher implements Watcher {
                 logger.info("Change has been observed in children");
                 connectedSemaphore.countDown();
             }
-        }
-        else{
-          logger.error("Failed to connect to zookeeper server");
+        } else {
+            logger.error("Failed to connect to zookeeper server");
         }
 
     }
@@ -192,12 +201,12 @@ public class ZooKeeperWatcher implements Watcher {
 
     public boolean deleteAllNodes(String rootPath, String nodePathSuffix, TreeSet<IECSNode> serverRepoTaken) {
         boolean ifAllSuccess = true;
-        if(this.exists(nodePathSuffix, false) != null){
-            for(IECSNode node : serverRepoTaken) {
-                ifAllSuccess = ifAllSuccess && this.deleteNode(nodePathSuffix + node.getNodeHost());
-            }
+
+        for (IECSNode node : serverRepoTaken) {
+            ifAllSuccess = ifAllSuccess && this.deleteNode(nodePathSuffix + node.getNodeName());
         }
-        if(this.exists(rootPath, false) != null){
+
+        if (this.exists(rootPath, false) != null) {
             ifAllSuccess = ifAllSuccess && this.deleteNode(rootPath);
         }
         return ifAllSuccess;
