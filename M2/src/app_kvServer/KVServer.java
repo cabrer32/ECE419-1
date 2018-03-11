@@ -313,6 +313,7 @@ public class KVServer implements IKVServer {
                 } catch (IOException e) {
                     logger.error("Error! " +
                             "Unable to establish connection. " + e);
+                    running = false;
                 }
             }
         }
