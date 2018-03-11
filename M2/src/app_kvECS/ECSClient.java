@@ -15,10 +15,11 @@ public class ECSClient implements IECSClient {
     private static Logger logger =  Logger.getRootLogger();
     private static final String[] CACHE_STRATEGY = {"LRU", "FIFO", "LFU", "None"};
     private static final String PROMPT = "B9ECS> ";
+    private static final int AWAIT_TIEMOUT = 20000;
     private BufferedReader stdin;
     private boolean stop = false;
     private boolean running = false;
-    private ECS ecs;
+    private ECS ecs = null;
     private String configFileName;
     private CountDownLatch semaphore;
     Collection<IECSNode> serversTaken;
@@ -32,23 +33,31 @@ public class ECSClient implements IECSClient {
     @Override
     public boolean start() {
         // TODO
-        if(running == false) {
-            ecs.start();
-        } else {
-//            semaphore = new CountDownLatch(1);
+        boolean ifSuccess = false;
+        if (ecs != null) {
+            ifSuccess = ecs.notifyAllServerNode();
+            if (ifSuccess) {
+                running = true;
+            }
         }
-        return false;
+        return ifSuccess;
     }
 
     @Override
     public boolean stop() {
         // TODO
+        if (ecs != null) {
+            return ecs.stop();
+        }
         return false;
     }
 
     @Override
     public boolean shutdown() {
         // TODO
+        if (ecs != null) {
+            return ecs.shutdown();
+        }
         return false;
     }
 
@@ -71,11 +80,11 @@ public class ECSClient implements IECSClient {
             logger.info("Not enough servers available for allocation!");
         }
         try {
-            this.awaitNodes(count, 0);
+            this.awaitNodes(count, AWAIT_TIEMOUT);
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.error(e.getMessage());
         }
-        this.serversTaken = serversTaken;
+        ecs.notifySelectedServerNode((TreeSet<IECSNode>) serversTaken, AWAIT_TIEMOUT);
         return serversTaken;
     }
 
@@ -90,27 +99,35 @@ public class ECSClient implements IECSClient {
     @Override
     public boolean awaitNodes(int count, int timeout) throws Exception {
         // TODO
-        ecs.awaitNodes(count, timeout);
-        return false;
+        return ecs.awaitNodes(count, timeout);
     }
 
     @Override
     public boolean removeNodes(Collection<String> nodeNames) {
         // TODO
-//        ecs.removeECSNodes(nodeNames);
-//        ecs.updataZKRoot();
-        return false;
+        return ecs.removeNodes(nodeNames);
     }
 
     @Override
     public Map<String, IECSNode> getNodes() {
         // TODO
-        return null;
+        Map<String, IECSNode> map = new HashMap<>();
+        TreeSet<IECSNode> allRunningNodes = ecs.getNodes();
+        for(IECSNode node : allRunningNodes) {
+            map.put(node.getNodeName(), node);
+        }
+        return map;
     }
 
     @Override
     public IECSNode getNodeByKey(String Key) {
         // TODO
+        TreeSet<IECSNode> allRunningNodes = ecs.getNodes();
+        for(IECSNode node : allRunningNodes) {
+            if (node.getNodeName() == Key) {
+                return node;
+            }
+        }
         return null;
     }
 
@@ -132,7 +149,7 @@ public class ECSClient implements IECSClient {
     public void handleCommand(String cmdLine) {
         String[] tokens = cmdLine.split("\\s+");
 
-        if (tokens[0].equals("start")){
+        if (tokens[0].equals("notifySelectedServerNode")){
             this.start();
 
         } else if(tokens[0].equals("stop")) {

@@ -11,6 +11,7 @@ import org.apache.zookeeper.data.Stat;
 import org.apache.log4j.Logger;
 
 import java.util.List;
+import java.util.TreeSet;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -100,21 +101,24 @@ public class ZooKeeperWatcher implements Watcher {
         } catch (Exception e) {
             logger.error("Failed to update Node at "+ path);
             logger.error(e);
+            return false;
         }
-        return false;
+        return true;
     }
 
     /**
      *  delete node
      */
-    public void deleteNode(String path) {
+    public boolean deleteNode(String path) {
         try {
             this.zk.delete(path, -1);
             logger.info("Successfully delete Node at " + path);
         } catch (Exception e) {
             logger.error("Failed to delete Node at "+ path);
-            logger.error(e);
+            logger.error(e.getMessage());
+            return false;
         }
+        return true;
     }
 
     /**
@@ -139,18 +143,6 @@ public class ZooKeeperWatcher implements Watcher {
         } catch (Exception e) {
             e.printStackTrace();
             return null;
-        }
-    }
-
-    /**
-     * 删除所有节点
-     */
-    public void deleteAllTestPath() {
-        if(this.exists(CHILDREN_PATH, false) != null){
-            this.deleteNode(CHILDREN_PATH);
-        }
-        if(this.exists(PARENT_PATH, false) != null){
-            this.deleteNode(PARENT_PATH);
         }
     }
 
@@ -187,12 +179,27 @@ public class ZooKeeperWatcher implements Watcher {
 
     }
 
-    public void awaitNodes(int count, int timeout) {
+    public boolean awaitNodes(int count, int timeout) {
         connectedSemaphore = new CountDownLatch(count);
+        boolean ifNotTimeout = true;
         try {
-            connectedSemaphore.await(timeout, TimeUnit.MILLISECONDS);
+            ifNotTimeout = connectedSemaphore.await(timeout, TimeUnit.MILLISECONDS);
         } catch (InterruptedException e) {
-            e.printStackTrace();
+            logger.error("Await Nodes has been interrupted!");
         }
+        return ifNotTimeout;
+    }
+
+    public boolean deleteAllNodes(String rootPath, String nodePathSuffix, TreeSet<IECSNode> serverRepoTaken) {
+        boolean ifAllSuccess = true;
+        if(this.exists(nodePathSuffix, false) != null){
+            for(IECSNode node : serverRepoTaken) {
+                ifAllSuccess = ifAllSuccess && this.deleteNode(nodePathSuffix + node.getNodeHost());
+            }
+        }
+        if(this.exists(rootPath, false) != null){
+            ifAllSuccess = ifAllSuccess && this.deleteNode(rootPath);
+        }
+        return ifAllSuccess;
     }
 }

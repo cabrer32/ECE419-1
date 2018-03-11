@@ -1,7 +1,6 @@
 package ecs;
 
 import com.google.gson.Gson;
-import common.messages.KVServerConfig;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 
@@ -15,7 +14,7 @@ import java.util.*;
 
 public class ECS {
     private static Logger logger =  Logger.getRootLogger();
-    private static final String SCRIPT_TEXT = "ssh -n %s nohup java -jar /Users/wuqili/Desktop/ECE419/M2/m2-server.jar %s %s %s %s %s %s &";
+    private static final String SCRIPT_TEXT = "ssh -n %s nohup java -jar /Users/pannnnn/UTcourses/ECE419/ece419/M2/m2-server.jar %s %s %s %s %s %s &";
 
     private Gson gson;
     private ZooKeeperWatcher zkWatch;
@@ -123,23 +122,26 @@ public class ECS {
                 CONNECTION_ADDR_PORT, node.getNodePort(), node.getCacheStrategy(), node.getCachesize());
         Process proc;
         Runtime run = Runtime.getRuntime();
-//        try {
-//            logger.info("Running ... " + script);
-//            proc = run.exec(script);
-//        } catch (IOException e) {
-//            logger.error("Failed to execute script!");
-//        }
+        try {
+            logger.info("Running ... " + script);
+            proc = run.exec(script);
+        } catch (IOException e) {
+            logger.error("Failed to execute script!");
+        }
     }
 
-    public boolean removeECSNodes(Collection<String> nodeNames) {
+    public boolean removeNodes(Collection<String> nodeNames) {
         boolean ifSuccess = true;
         int removedCount = 0;
         for (Iterator<String> iterator = nodeNames.iterator(); iterator.hasNext();) {
             for (IECSNode node: serverRepoTaken) {
-                if (node.getNodeName().equals(iterator.next())){
-                    serverRepoTaken.remove(node);
-                    serverRepoMapping.put(node, 1);
-                    removedCount++;
+                String nodeName = node.getNodeName();
+                if (nodeName.equals(iterator.next())){
+                    if (zkWatch.deleteNode(nodeName)) {
+                        serverRepoTaken.remove(node);
+                        serverRepoMapping.put(node, 1);
+                        removedCount++;
+                    }
                 }
             }
         }
@@ -149,8 +151,8 @@ public class ECS {
         return ifSuccess;
     }
 
-    public void awaitNodes(int count, int timeout) {
-        zkWatch.awaitNodes(count, timeout);
+    public boolean awaitNodes(int count, int timeout) {
+        return zkWatch.awaitNodes(count, timeout);
     }
 
     public void registerWatchEvent(TreeSet<IECSNode> serversTaken) {
@@ -159,10 +161,32 @@ public class ECS {
         }
     }
 
-    public void start() {
+    public boolean notifyAllServerNode() {
+        boolean ifAnySuccess = false;
         String json = new Gson().toJson(serverRepoTaken);
         for (IECSNode node : serverRepoTaken) {
-            zkWatch.writeData(NODE_PATH_SUFFIX + node.getNodeName(), json);
+            ifAnySuccess = ifAnySuccess || zkWatch.writeData(NODE_PATH_SUFFIX + node.getNodeName(), json);
         }
+        return ifAnySuccess;
+    }
+
+    public void notifySelectedServerNode(TreeSet<IECSNode> serversTaken, int awaitTiemout) {
+        String json = new Gson().toJson(serverRepoTaken);
+        for (IECSNode node : serversTaken) {
+            zkWatch.writeData(NODE_PATH_SUFFIX + node.getNodeName(), json);
+            zkWatch.awaitNodes(1, awaitTiemout);
+        }
+    }
+
+    public boolean stop() {
+        return zkWatch.writeData(ROOT_PATH, "");
+    }
+
+    public boolean shutdown() {
+        return zkWatch.deleteAllNodes(ROOT_PATH, NODE_PATH_SUFFIX, serverRepoTaken);
+    }
+
+    public TreeSet<IECSNode> getNodes() {
+        return serverRepoTaken;
     }
 }
