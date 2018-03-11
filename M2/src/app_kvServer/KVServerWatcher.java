@@ -211,13 +211,19 @@ public class KVServerWatcher {
                             exists(ROOT_PATH, this);
                             break;
                         case NodeDataChanged:
-                            logger.info("metadata is changed");
+                            logger.info("ROOT_PATH data changed");
+
                             String data = readData(ROOT_PATH, this);
-                            if (data.equals("")) stopServer();
-                            else updateMeta(parseJsonObject(data), false);
+
+                            if (data.equals("")) {
+                                kvServer.stop();
+                            } else {
+                                kvServer.setMetaData(parseJsonObject(data));
+                            }
                             break;
                         case NodeDeleted:
                             logger.info("ZooKeeper shutting down");
+                            kvServer.close();
                             break;
                         default:
                             break;
@@ -249,13 +255,9 @@ public class KVServerWatcher {
                     switch (eventType) {
                         case NodeDataChanged:
                             logger.info("metadata is changed.");
-                            String globalData = readData(ROOT_PATH, connectionWatcher);
                             String data = readData(path, this);
 
-                            updateMeta(parseJsonObject(data), true);
-                            break;
-                        case NodeDeleted:
-                            logger.info("stop KVserver " + KVname);
+                            updateServer(parseJsonObject(data));
                             break;
                         default:
                             break;
@@ -281,34 +283,30 @@ public class KVServerWatcher {
 
                 logger.info("data watcher triggered " + event.toString());
 
-                if (path.equals(childPath + "/data")) {
-                    logger.info("Irrelevant.");
-                    return;
-                }
-
-
                 if (keeperState == KeeperState.SyncConnected) {
                     switch (eventType) {
                         case NodeCreated:
 
-                            logger.info("received data from " + path);
+                            logger.info("received new data from");
 
                             String data = readData(path, dataWatcher);
+                            Map.Entry<String, String> kv = parseJsonEntry(data);
+                            kvServer.DBput(kv.getKey(), kv.getValue());
 
-                            if(data.equals("finished")){
-                                exists(path, null);
-                            }else{
-                                Map.Entry<String,String> kv = parseJsonEntry(data);
-                                kvServer.DBput(kv.getKey(),kv.getValue());
-                            }
+                            deleteNode(path);
+                            exists(path,this);
                             break;
                         case NodeDeleted:
 
-                            logger.info("continue to send data " + KVname);
+                            if(path.equals(childPath + "/data"))
+                            {
+                                logger.info("Irrelevant");
+                                return;
+                            }
 
-                            exists(path, dataWatcher);
+                            logger.info("Ack received  ");
 
-                            if(dataSemaphore != null)
+                            if (dataSemaphore != null)
                                 dataSemaphore.countDown();
 
                             break;
@@ -330,10 +328,79 @@ public class KVServerWatcher {
 
             createPath(childPath, "", childrenWatcher);
 
+            exists((childPath + "/data"), dataWatcher);
+
         } catch (Exception e) {
             logger.error("Failed to process KVServer Watcher " + e);
         }
     }
+
+
+    void updateServer(ArrayList<ECSNode> meta) {
+
+        //start server
+        if (kvServer.getState() == KVServer.KVServerState.STOPPED) {
+            kvServer.setMetaData(meta);
+            kvServer.start();
+
+            return;
+        }
+
+        String oldRange[] = kvServer.getRange();
+
+        boolean edge = oldRange[0].compareTo(oldRange[1]) > 0;
+
+        boolean destroy = true;
+
+
+        //there are new server coming
+        for (int i = 0; i < meta.size(); i++) {
+
+            ECSNode node = meta.get(i);
+
+            if (node.getNodeName().equals(kvServer.getName())) destroy = false;
+
+            if (!node.getNodeName().equals(kvServer.getName())) {
+                if (edge && node.getStartingHashValue().compareTo(oldRange[0]) >= 0 &&
+                        node.getEndingHashValue().compareTo(oldRange[1]) <= 0) {
+
+                    try {
+                        kvServer.moveData(node.getNodeHashRange(), node.getNodeName());
+
+                    } catch (Exception e) {
+                        logger.error("Error while moving data " + node.getNodeName());
+                    }
+                }
+
+            }
+        }
+
+
+        //Need to destroy node
+        if (destroy) {
+            for (int i = 0; i < meta.size(); i++) {
+                ECSNode node = meta.get(i);
+
+                if (!node.getNodeName().equals(kvServer.getName())) {
+                    if (edge && node.getStartingHashValue().compareTo(oldRange[0]) <= 0 &&
+                            node.getEndingHashValue().compareTo(oldRange[1]) >= 0) {
+                        try {
+
+                            kvServer.moveData(node.getNodeHashRange(), node.getNodeName());
+
+                        } catch (Exception e) {
+                            logger.error("Error while moving data to " + node.getNodeName());
+                        }
+                    }
+
+                }
+            }
+        }
+
+        writeData(ROOT_PATH, gson.toJson(meta, ECSNode.class));
+
+    }
+
 
     ArrayList<ECSNode> parseJsonObject(String data) {
         try {
@@ -347,97 +414,36 @@ public class KVServerWatcher {
         return null;
     }
 
-    Map.Entry<String, String> parseJsonEntry(String data){
-        Type Type = new TypeToken<Map.Entry<String,String>>() {
+    Map.Entry<String, String> parseJsonEntry(String data) {
+        Type Type = new TypeToken<Map.Entry<String, String>>() {
         }.getType();
 
         return gson.fromJson(data, Type);
     }
 
-    String entryToJson(Map.Entry<String, String> kv){
-        Type Type = new TypeToken<Map.Entry<String,String>>() {
+    String entryToJson(Map.Entry<String, String> kv) {
+        Type Type = new TypeToken<Map.Entry<String, String>>() {
         }.getType();
 
-        return gson.toJson(kv,Type);
+        return gson.toJson(kv, Type);
     }
 
+    void moveData(String key, String value, String targetName) {
+        String dest = ROOT_PATH + "/" + targetName + "/data";
 
-    void stopServer() {
-        kvServer.stop();
-    }
+        logger.info("Sending key => " + key + " to " + targetName);
 
+        dataSemaphore = new CountDownLatch(1);
 
-    void updateMeta(ArrayList<ECSNode> meta, boolean movedata) {
-        if (!movedata) {
-            kvServer.setMetaData(meta);
-            return;
-        }
+        Map.Entry<String, String> kv = new AbstractMap.SimpleEntry<String, String>(key, value);
 
-        if (kvServer.getState() == KVServer.KVServerState.STOPPED) {
-            kvServer.setMetaData(meta);
-            kvServer.start();
+        writeData(dest, entryToJson(kv));
+        exists(dest, dataWatcher);
 
-            String globalData = readData(ROOT_PATH, connectionWatcher);
-
-            ArrayList<ECSNode> globalMeta = parseJsonObject(globalData);
-
-            if (globalMeta.size() != meta.size()) {
-                for (int i = 0; i < meta.size(); i++) {
-                    if (meta.get(i).getNodeName().equals(kvServer.getName())) {
-                        int precessor = (i == meta.size() - 1) ? 0 : i + 1;
-                        writeData(ROOT_PATH + "/" + meta.get(i).getNodeName(), gson.toJson(meta));
-                        break;
-                    }
-                }
-            }
-
-        } else {
-            logger.info("move some data to another KVserver");
-
-            for (int i = 0; i < meta.size(); i++) {
-                if (meta.get(i).getNodeName().equals(kvServer.getName())) {
-                    int successor = (i == 0) ? meta.size() - 1 : i - 1;
-
-
-                    String[] range = new String[2];
-                    range[0] = meta.get(successor).getStartingHashValue();
-                    range[1] = meta.get(successor).getEndingHashValue();
-
-                    try {
-                        kvServer.moveData(range, meta.get(i).getNodeName());
-                    } catch (Exception e) {
-                        logger.error("Cannot move data to " + meta.get(i).getNodeName());
-                        logger.error(e);
-                    }
-                }
-            }
-
-            kvServer.setMetaData(meta);
-        }
-    }
-
-
-
-    void moveData(String key, String value, String server) {
-        String dest = childPath + "/data";
-
-        if(key.equals("")){
-            logger.info("Finished Transfer data");
-            writeData(dest, "success");
-        }
-        else{
-            logger.info("Sending data key => " + key);
-            dataSemaphore = new CountDownLatch(1);
-            Map.Entry<String,String> kv = new AbstractMap.SimpleEntry<String, String>(key,value);
-
-            writeData(dest, entryToJson(kv));
-
-            try {
-                dataSemaphore.await();
-            }catch(Exception e){
-                logger.error("Cannot send data ");
-            }
-
+        try {
+            dataSemaphore.await();
+        } catch (Exception e) {
+            logger.error("Cannot send data ");
         }
     }
 }

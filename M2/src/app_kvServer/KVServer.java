@@ -152,7 +152,7 @@ public class KVServer implements IKVServer {
         return serversTaken;
     }
 
-    public String getName(){
+    public String getName() {
         return name;
     }
 
@@ -160,12 +160,20 @@ public class KVServer implements IKVServer {
         this.serversTaken = serversTaken;
     }
 
-    public void DBput(String key, String value){
-        try{
+    public String[] getRange() {
+        for (IECSNode node : serversTaken)
+            if (node.getNodeName().equals(name))
+                return node.getNodeHashRange();
+
+        return null;
+    }
+
+    public void DBput(String key, String value) {
+        try {
             logger.info("put to DB " + key);
             db.putKV(key, value);
-        }catch (IOException e){
-            logger.error("Cannot write to file "+ e);
+        } catch (IOException e) {
+            logger.error("Cannot write to file " + e);
         }
 
     }
@@ -315,6 +323,7 @@ public class KVServer implements IKVServer {
 
     @Override
     public void kill() {
+        running = false;
         try {
             logger.info("Killing Server!");
             for (ClientConnection client : connections) {
@@ -369,22 +378,22 @@ public class KVServer implements IKVServer {
 
     @Override
     public boolean moveData(String[] hashRange, String targetName) throws Exception {
-        try{
+        try {
             HashMap<String, String> map = db.getRangeKV(hashRange);
 
             Iterator it = map.entrySet().iterator();
 
             logger.info("Start transer data");
             while (it.hasNext()) {
-                Map.Entry<String,String> pair = (Map.Entry)it.next();
-                zkWatch.moveData(pair.getKey(),pair.getValue(), targetName);
+                Map.Entry<String, String> pair = (Map.Entry) it.next();
+                zkWatch.moveData(pair.getKey(), pair.getValue());
             }
 
             logger.info("Start removing data");
             db.removeRangeKV(hashRange);
             logger.info("Finished removing data");
 
-        }catch (Exception e){
+        } catch (Exception e) {
             logger.info("cannot get ranged kV");
         }
 
@@ -402,7 +411,8 @@ public class KVServer implements IKVServer {
 
                 server.initKVServer(Integer.parseInt(args[3]), Integer.parseInt(args[5]), args[4]);
 
-                new ServerThread(server).run();
+                new ServerThread(server).start();
+
             }
         } catch (IOException e) {
             System.out.println("Error! Unable to initialize logger!");
