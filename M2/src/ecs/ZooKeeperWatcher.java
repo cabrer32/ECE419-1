@@ -107,7 +107,8 @@ public class ZooKeeperWatcher implements Watcher {
      */
     public boolean deleteNode(String path) {
         try {
-            this.zk.delete(path, -1);
+            if (zk.exists(path, false) != null)
+                this.zk.delete(path, -1);
             logger.info("Successfully delete Node at " + path);
         } catch (Exception e) {
             logger.error("Failed to delete Node at " + path);
@@ -161,7 +162,7 @@ public class ZooKeeperWatcher implements Watcher {
                 connectedSemaphore.countDown();
                 try {
                     this.zk.getChildren(PARENT_PATH, this);
-                }catch (Exception e){
+                } catch (Exception e) {
                     logger.error("cannot watch on children nodes");
                 }
             }
@@ -170,7 +171,8 @@ public class ZooKeeperWatcher implements Watcher {
         }
 
     }
-    public void setSemaphore(int count){
+
+    public void setSemaphore(int count) {
         connectedSemaphore = new CountDownLatch(count);
     }
 
@@ -193,11 +195,11 @@ public class ZooKeeperWatcher implements Watcher {
 
         try {
             this.zk.getChildren(PARENT_PATH, false);
-        }catch(Exception e){
+        } catch (Exception e) {
             logger.error("Cannot unwatch children");
         }
 
-        for(IECSNode node : serverRepoTaken) {
+        for (IECSNode node : serverRepoTaken) {
             ifAllSuccess = ifAllSuccess && this.deleteNode(nodePathSuffix + node.getNodeName());
         }
         ifAllSuccess = ifAllSuccess && this.deleteNode(rootPath);
