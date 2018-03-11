@@ -121,6 +121,7 @@ public class ECS {
     }
 
     public void sendMetedata(IECSNode node) {
+        logger.info("Sending latest metadata to "+ node.getNodeName());
         String json = new Gson().toJson(serverRepoTaken);
         zkWatch.writeData(NODE_PATH_SUFFIX + node.getNodeName(), json);
     }

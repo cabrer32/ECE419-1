@@ -221,10 +221,6 @@ public class KVServerWatcher {
                                 kvServer.setMetaData(parseJsonObject(data));
                             }
                             break;
-                        case NodeDeleted:
-                            logger.info("ZooKeeper shutting down");
-                            kvServer.close();
-                            break;
                         default:
                             break;
                     }
@@ -259,6 +255,9 @@ public class KVServerWatcher {
 
                             updateServer(parseJsonObject(data));
                             break;
+                        case NodeDeleted:
+                            kvServer.close();
+
                         default:
                             break;
                     }

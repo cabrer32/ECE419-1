@@ -87,9 +87,6 @@ public class KVServer implements IKVServer {
         this.zkHostname = zkHostname;
         this.zkPort = zkPort;
 
-        //Initialize server watch
-        this.zkWatch = new KVServerWatcher(logger, this, this.zkHostname + ":" + this.zkPort, this.name);
-        this.zkWatch.init();
     }
 
     public void initKVServer(int port, int cacheSize, String Strategy) {
@@ -144,6 +141,11 @@ public class KVServer implements IKVServer {
             logger.error("Cannot create new DB " + e);
             return;
         }
+
+
+        //Initialize server watch
+        this.zkWatch = new KVServerWatcher(logger, this, this.zkHostname + ":" + this.zkPort, this.name);
+        this.zkWatch.init();
 
         running = true;
     }
@@ -313,7 +315,7 @@ public class KVServer implements IKVServer {
                             + " on port " + client.getPort());
                 } catch (IOException e) {
                     logger.error("Error! " +
-                            "Unable to establish connection. \n");
+                            "Unable to establish connection. " + e);
                 }
             }
         }
