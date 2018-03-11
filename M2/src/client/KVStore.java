@@ -3,27 +3,31 @@ package client;
 import app_kvClient.ClientSocketListener;
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
+import com.google.gson.reflect.TypeToken;
 import common.messages.KVMessage;
 import common.messages.Message;
 import common.module.CommunicationModule;
 import ecs.ECSNode;
+import ecs.IECSNode;
 import org.apache.log4j.Logger;
 
 import javax.xml.bind.DatatypeConverter;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.Comparator;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 public class KVStore implements KVCommInterface {
 	private Logger logger = Logger.getRootLogger();
+	private static final String STARTING_HASH_VALUE = "00000000000000000000000000000000";
+	private static final String ENDING_HASH_VALUE = "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF";
 	private Set<ClientSocketListener> listeners;
 	private boolean running;
-	private CommunicationModule communicationModule;
+//	private CommunicationModule communicationModule;
+	private HashMap<String, CommunicationModule> communicationModules;
 	private Gson gson;
+	private TreeSet<IECSNode> serverList;
+	private String firstServerName;
 
 	/**
 	 * Initialize KVStore with address and port of KVServer
@@ -33,7 +37,9 @@ public class KVStore implements KVCommInterface {
 	 */
 	public KVStore(String address, int port) {
 		// TODO Auto-generated method stub
-		communicationModule = new CommunicationModule(address, port);
+		serverList = null;
+		firstServerName = "server8";
+		communicationModules.put(firstServerName, new CommunicationModule(address, port));
 		gson = new Gson();
 		listeners = new HashSet<ClientSocketListener>();
 	}
@@ -42,10 +48,10 @@ public class KVStore implements KVCommInterface {
 		this.listeners.add(listener);
 	}
 
-	public KVMessage sendMessage(KVMessage msgReq) throws IOException {
+	public KVMessage sendMessage(CommunicationModule cm, KVMessage msgReq) throws IOException {
 		String msgJsonReq = gson.toJson(msgReq);
-		communicationModule.sendMessage(msgJsonReq);
-		String msgJsonRes = communicationModule.receiveMessage();
+		cm.sendMessage(msgJsonReq);
+		String msgJsonRes = cm.receiveMessage();
 		KVMessage msg = null;
 		try {
 			msg = gson.fromJson(msgJsonRes, Message.class);
@@ -58,13 +64,16 @@ public class KVStore implements KVCommInterface {
 	@Override
 	public void connect() throws IOException {
 		// TODO Auto-generated method stub
-		communicationModule.connect();
-		communicationModule.setStream();
-		String welcomeMsg = communicationModule.receiveMessage();
-		for (ClientSocketListener listener : listeners) {
-			listener.handleNewMessage(welcomeMsg);
+		if(!communicationModules.isEmpty()) {
+			CommunicationModule ci = communicationModules.values().iterator().next();
+			ci.connect();
+			ci.setStream();
+			String welcomeMsg = ci.receiveMessage();
+			for (ClientSocketListener listener : listeners) {
+				listener.handleNewMessage(welcomeMsg);
+			}
+			logger.info("Connection established");
 		}
-		logger.info("Connection established");
 	}
 
 	@Override
@@ -72,7 +81,9 @@ public class KVStore implements KVCommInterface {
 		// TODO Auto-generated method stub
 		logger.info("try to close connection ...");
 		try {
-			communicationModule.disconnect();
+			for (CommunicationModule ci : communicationModules.values()) {
+				ci.disconnect();
+			}
 			for (ClientSocketListener listener : listeners) {
 				listener.handleStatus(ClientSocketListener.SocketStatus.DISCONNECTED);
 			}
@@ -84,33 +95,62 @@ public class KVStore implements KVCommInterface {
 	@Override
 	public boolean isConnected() {
 		// TODO Auto-generated method stub
-		return (communicationModule.getSocket() != null);
+		boolean ifAnyConnected = false;
+		for (CommunicationModule ci : communicationModules.values()) {
+			ifAnyConnected = ifAnyConnected || (ci.getSocket() != null);
+		}
+		return ifAnyConnected;
 	}
 
 	@Override
 	public KVMessage put(String key, String value) throws IOException {
 		// TODO Auto-generated method stub
-		KVMessage msgReq = new Message(KVMessage.StatusType.PUT, key, value);
-		KVMessage msgRes = sendMessage(msgReq);
-
-		if (msgRes.getStatus().equals("SERVER_NOT_RESPONSIBLE")) ;
-		{
-			//diconnect the server
-			if (isConnected()) {
-				disconnect();
+		KVMessage msgReq = null;
+		KVMessage msgRes = null;
+		while(true) {
+			if (serverList == null) {
+				CommunicationModule ci = communicationModules.get(firstServerName);
+				msgReq = new Message(KVMessage.StatusType.PUT, key, value);
+				msgRes = sendMessage(ci, msgReq);
+			} else {
+				String keyHashValue = getHashValue(key);
+				IECSNode targetNode = null;
+				for (IECSNode node : serverList) {
+					if (((ECSNode) node).contains(keyHashValue)) {
+						targetNode = node;
+					}
+				}
+				CommunicationModule ci = communicationModules.get(targetNode.getNodeName());
+				if(ci == null) {
+					ci = new CommunicationModule(targetNode.getNodeHost(), targetNode.getNodePort());
+					ci.connect();
+					ci.setStream();
+					communicationModules.put(targetNode.getNodeName(), ci);
+					msgReq = new Message(KVMessage.StatusType.PUT, key, value);
+					msgRes = sendMessage(ci, msgReq);
+				} else {
+					msgReq = new Message(KVMessage.StatusType.PUT, key, value);
+					msgRes = sendMessage(ci, msgReq);
+				}
 			}
-			// find hash, and look for that has in latest metatable just received
-			getHash(key);
+			if (msgReq != null) {
+				if (msgRes.getStatus().equals("SERVER_NOT_RESPONSIBLE")) {
+					serverList = gson.fromJson(msgRes.getValue(), new TypeToken<TreeSet<IECSNode>>(){}.getType());
+				} else if (msgRes.getStatus().equals("SERVER_STOPPED")) {
+					for (ClientSocketListener listener : listeners) {
+						listener.handleNewMessage("Server stopped! Please try again later!");
+					}
+					break;
+				} else if (msgRes.getStatus().equals("SERVER_WRITE_LOCK ")) {
+					for (ClientSocketListener listener : listeners) {
+						listener.handleNewMessage("Server is leaving or joining! Please try again later!");
+					}
+					break;
+				} else {
+					break;
+				}
+			}
 		}
-		if (msgRes.getStatus().equals("SERVER_STOPPED")) ;
-		{
-			//display error message
-		}
-		if (msgRes.getStatus().equals("SERVER_WRITE_LOCK ")) ;
-		{
-			// display error message
-		}
-		//get the hash
 		return msgRes;
 	}
 
@@ -126,14 +166,11 @@ public class KVStore implements KVCommInterface {
 				disconnect();
 			}
 			// find hash, and look for that has in latest metatable just received
-			getHash(key);
+			getHashValue(key);
 		}
 		if (msgRes.getStatus() == KVMessage.StatusType.SERVER_STOPPED) {
-			//display error message
-			System.out.println("SERVER_STOPPED");
-			//diconnect the server
-			if (isConnected()) {
-				disconnect();
+			for (ClientSocketListener listener : listeners) {
+				listener.handleNewMessage("Server stopped! Please try again later!");
 			}
 		}
 		if (msgRes.getStatus() == KVMessage.StatusType.SERVER_WRITE_LOCK) {
@@ -148,20 +185,17 @@ public class KVStore implements KVCommInterface {
 		return msgRes;
 	}
 
-	public String getHash(String Key) throws IOException {
-		String hashValue;
+	public String getHashValue(String key) throws IOException {
+		MessageDigest md = null;
 		try {
-			byte[] data1 = Key.getBytes("UTF-8");
-			MessageDigest md = MessageDigest.getInstance("MD5");
-			md.update(data1);
+			md = MessageDigest.getInstance("MD5");
+			md.update(key.getBytes());
 			byte[] digest = md.digest();
-			hashValue = DatatypeConverter.printHexBinary(digest).toUpperCase();
+			String hashValue = DatatypeConverter.printHexBinary(digest).toUpperCase();
 			return hashValue;
 		} catch (NoSuchAlgorithmException e) {
-			System.out.println("Unable to hash the key");
-
+			logger.error("Unable to hash the key " + key + "!");
 		}
 		return null;
-
 	}
 }

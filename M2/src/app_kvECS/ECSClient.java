@@ -22,6 +22,7 @@ public class ECSClient implements IECSClient {
     private ECS ecs = null;
     private String configFileName;
     private CountDownLatch semaphore;
+    Collection<ECSNode> serversTaken;
 
     public ECSClient(String configFileName) {
         this.configFileName = configFileName;
