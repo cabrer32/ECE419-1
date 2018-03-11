@@ -86,21 +86,6 @@ public class ZooKeeperWatcher implements Watcher {
     }
 
     /**
-     * Read data from node
-     */
-    public String readData(String path, boolean needWatch) {
-        try {
-            String data = new String(this.zk.getData(path, needWatch, null));
-            logger.info("Successfully read Node from " + path + "  data: " + data);
-            return data;
-        } catch (Exception e) {
-            logger.error("Failed to read Node from " + path);
-            logger.error(e);
-            return "";
-        }
-    }
-
-    /**
      * update node
      */
     public boolean writeData(String path, String data) {
@@ -133,23 +118,9 @@ public class ZooKeeperWatcher implements Watcher {
     /**
      * 判断指定节点是否存在
      */
-    public Stat exists(String path, boolean needWatch) {
+    public Stat exists(String path, Watcher watch) {
         try {
-            return this.zk.exists(path, needWatch);
-        } catch (Exception e) {
-            e.printStackTrace();
-            return null;
-        }
-    }
-
-    /**
-     * 获取子节点
-     *
-     * @param path 节点路径
-     */
-    private List<String> getChildren(String path, boolean needWatch) {
-        try {
-            return this.zk.getChildren(path, needWatch);
+            return this.zk.exists(path, watch);
         } catch (Exception e) {
             e.printStackTrace();
             return null;
@@ -166,30 +137,38 @@ public class ZooKeeperWatcher implements Watcher {
             return;
         }
 
-        // 连接状态
+        // Event state
         KeeperState keeperState = event.getState();
-        // 事件类型
+        // Event type
         EventType eventType = event.getType();
+        // watch event relative path
+        String path = event.getPath();
+
 
         if (KeeperState.SyncConnected == keeperState) {
 
             if (EventType.None == eventType) {
                 logger.info("Successfully connected to zookeeper");
                 connectedSemaphore.countDown();
+                exists(PARENT_PATH, this);
             }
 
             if (EventType.NodeChildrenChanged == eventType) {
                 logger.info("Change has been observed in children");
                 connectedSemaphore.countDown();
+                exists(PARENT_PATH, this);
             }
         } else {
             logger.error("Failed to connect to zookeeper server");
         }
 
     }
+    public void setSemaphore(int count){
+        connectedSemaphore = new CountDownLatch(count);
+    }
 
     public boolean awaitNodes(int count, int timeout) {
-        connectedSemaphore = new CountDownLatch(count);
+
         boolean ifNotTimeout = true;
         try {
             ifNotTimeout = connectedSemaphore.await(timeout, TimeUnit.MILLISECONDS);
@@ -206,7 +185,7 @@ public class ZooKeeperWatcher implements Watcher {
             ifAllSuccess = ifAllSuccess && this.deleteNode(nodePathSuffix + node.getNodeName());
         }
 
-        if (this.exists(rootPath, false) != null) {
+        if (this.exists(rootPath, this) != null) {
             ifAllSuccess = ifAllSuccess && this.deleteNode(rootPath);
         }
         return ifAllSuccess;

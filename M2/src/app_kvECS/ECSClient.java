@@ -12,7 +12,7 @@ import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 
 public class ECSClient implements IECSClient {
-    private static Logger logger =  Logger.getRootLogger();
+    private static Logger logger = Logger.getRootLogger();
     private static final String[] CACHE_STRATEGY = {"LRU", "FIFO", "LFU", "None"};
     private static final String PROMPT = "B9ECS> ";
     private static final int AWAIT_TIEMOUT = 20000;
@@ -22,7 +22,6 @@ public class ECSClient implements IECSClient {
     private ECS ecs = null;
     private String configFileName;
     private CountDownLatch semaphore;
-    Collection<IECSNode> serversTaken;
 
     public ECSClient(String configFileName) {
         this.configFileName = configFileName;
@@ -32,15 +31,13 @@ public class ECSClient implements IECSClient {
 
     @Override
     public boolean start() {
-        // TODO
-        boolean ifSuccess = false;
+
         if (ecs != null) {
-            ifSuccess = ecs.notifyAllServerNode();
-            if (ifSuccess) {
-                running = true;
-            }
+            ecs.startAllNodes();
+            running = true;
+            return true;
         }
-        return ifSuccess;
+        return false;
     }
 
     @Override
@@ -81,7 +78,9 @@ public class ECSClient implements IECSClient {
         Collection<IECSNode> serversTaken = this.setupNodes(count, cacheStrategy, cacheSize);
 
         if (serversTaken != null) {
-            for (Iterator<IECSNode> iterator = serversTaken.iterator(); iterator.hasNext();) {
+            ecs.setSemaphore(count);
+
+            for (Iterator<IECSNode> iterator = serversTaken.iterator(); iterator.hasNext(); ) {
                 ecs.executeScript((ECSNode) iterator.next());
             }
         } else {
@@ -92,6 +91,12 @@ public class ECSClient implements IECSClient {
         } catch (Exception e) {
             logger.error(e.getMessage());
         }
+
+        if(running)
+            for(IECSNode node : serversTaken)
+                ecs.sendMetedata(node);
+                ecs.notifyPrecessor(serversTaken);
+
         ecs.notifySelectedServerNode((TreeSet<IECSNode>) serversTaken, AWAIT_TIEMOUT);
         return serversTaken;
     }
@@ -121,7 +126,7 @@ public class ECSClient implements IECSClient {
         // TODO
         Map<String, IECSNode> map = new HashMap<>();
         TreeSet<IECSNode> allRunningNodes = ecs.getNodes();
-        for(IECSNode node : allRunningNodes) {
+        for (IECSNode node : allRunningNodes) {
             map.put(node.getNodeName(), node);
         }
         return map;
@@ -131,7 +136,7 @@ public class ECSClient implements IECSClient {
     public IECSNode getNodeByKey(String Key) {
         // TODO
         TreeSet<IECSNode> allRunningNodes = ecs.getNodes();
-        for(IECSNode node : allRunningNodes) {
+        for (IECSNode node : allRunningNodes) {
             if (node.getNodeName() == Key) {
                 return node;
             }
@@ -140,7 +145,7 @@ public class ECSClient implements IECSClient {
     }
 
     public void run() {
-        while(!stop) {
+        while (!stop) {
             stdin = new BufferedReader(new InputStreamReader(System.in));
             System.out.print(PROMPT);
 
@@ -157,29 +162,29 @@ public class ECSClient implements IECSClient {
     public void handleCommand(String cmdLine) {
         String[] tokens = cmdLine.split("\\s+");
 
-        if (tokens[0].equals("start")){
+        if (tokens[0].equals("start")) {
             if (!this.start()) {
                 printError("Start failed!");
             } else {
                 System.out.println("Start successfully!");
             }
 
-        } else if(tokens[0].equals("stop")) {
+        } else if (tokens[0].equals("stop")) {
             if (!this.stop()) {
                 printError("Stop failed!");
             } else {
                 System.out.println("Stop successfully!");
             }
 
-        } else if(tokens[0].equals("shutdown")) {
+        } else if (tokens[0].equals("shutdown")) {
             if (!this.shutdown()) {
                 printError("Shutdown failed!");
             } else {
                 System.out.println("Shutdown successfully!");
             }
 
-        } else if(tokens[0].equals("addnode")) {
-            if(tokens.length == 3) {
+        } else if (tokens[0].equals("addnode")) {
+            if (tokens.length == 3) {
                 String cacheStrategy = tokens[1];
                 if (Arrays.asList(CACHE_STRATEGY).contains(cacheStrategy)) {
                     int cacheSize = Integer.valueOf(tokens[2]);
@@ -191,8 +196,8 @@ public class ECSClient implements IECSClient {
                 printError("Usage: addnode <count> <cache strategy> <cache size>");
             }
 
-        } else if(tokens[0].equals("addnodes")) {
-            if(tokens.length == 4) {
+        } else if (tokens[0].equals("addnodes")) {
+            if (tokens.length == 4) {
                 int count = Integer.valueOf(tokens[1]);
                 String cacheStrategy = tokens[2];
                 if (Arrays.asList(CACHE_STRATEGY).contains(cacheStrategy)) {
@@ -205,24 +210,24 @@ public class ECSClient implements IECSClient {
                 printError("Usage: addnode <count> <cache strategy> <cache size>");
             }
 
-        } else if(tokens[0].equals("removenode")) {
-            if(tokens.length == 2) {
+        } else if (tokens[0].equals("removenode")) {
+            if (tokens.length == 2) {
                 String serverName = tokens[1];
-                ArrayList<String> nodeNames =  new ArrayList<>();
+                ArrayList<String> nodeNames = new ArrayList<>();
                 nodeNames.add(serverName);
-                if(!this.removeNodes(nodeNames)) {
+                if (!this.removeNodes(nodeNames)) {
                     printError("Failed to remove nodes!");
-                } else  {
+                } else {
                     System.out.println("Nodes removed successfully!");
                 }
             } else {
                 printError("Usage: removenode <server name>");
             }
 
-        } else if(tokens[0].equals("logLevel")) {
-            if(tokens.length == 2) {
+        } else if (tokens[0].equals("logLevel")) {
+            if (tokens.length == 2) {
                 String level = setLevel(tokens[1]);
-                if(level.equals(LogSetup.UNKNOWN_LEVEL)) {
+                if (level.equals(LogSetup.UNKNOWN_LEVEL)) {
                     printError("No valid log level!");
                     printPossibleLogLevels();
                 } else {
@@ -233,10 +238,10 @@ public class ECSClient implements IECSClient {
                 printError("Invalid number of parameters!");
             }
 
-        } else if(tokens[0].equals("help")) {
+        } else if (tokens[0].equals("help")) {
             printHelp();
 
-        } else if(tokens[0].equals("quit")) {
+        } else if (tokens[0].equals("quit")) {
             stop = true;
 //            disconnect();
             System.out.println(PROMPT + "Application exit!");
@@ -281,25 +286,25 @@ public class ECSClient implements IECSClient {
 
     private String setLevel(String levelString) {
 
-        if(levelString.equals(Level.ALL.toString())) {
+        if (levelString.equals(Level.ALL.toString())) {
             logger.setLevel(Level.ALL);
             return Level.ALL.toString();
-        } else if(levelString.equals(Level.DEBUG.toString())) {
+        } else if (levelString.equals(Level.DEBUG.toString())) {
             logger.setLevel(Level.DEBUG);
             return Level.DEBUG.toString();
-        } else if(levelString.equals(Level.INFO.toString())) {
+        } else if (levelString.equals(Level.INFO.toString())) {
             logger.setLevel(Level.INFO);
             return Level.INFO.toString();
-        } else if(levelString.equals(Level.WARN.toString())) {
+        } else if (levelString.equals(Level.WARN.toString())) {
             logger.setLevel(Level.WARN);
             return Level.WARN.toString();
-        } else if(levelString.equals(Level.ERROR.toString())) {
+        } else if (levelString.equals(Level.ERROR.toString())) {
             logger.setLevel(Level.ERROR);
             return Level.ERROR.toString();
-        } else if(levelString.equals(Level.FATAL.toString())) {
+        } else if (levelString.equals(Level.FATAL.toString())) {
             logger.setLevel(Level.FATAL);
             return Level.FATAL.toString();
-        } else if(levelString.equals(Level.OFF.toString())) {
+        } else if (levelString.equals(Level.OFF.toString())) {
             logger.setLevel(Level.OFF);
             return Level.OFF.toString();
         } else {
@@ -307,8 +312,8 @@ public class ECSClient implements IECSClient {
         }
     }
 
-    private void printError(String error){
-        System.out.println(PROMPT + "Error! " +  error);
+    private void printError(String error) {
+        System.out.println(PROMPT + "Error! " + error);
     }
 
     public static void main(String[] args) {
@@ -321,11 +326,11 @@ public class ECSClient implements IECSClient {
             } else {
                 String configFileName = args[0];
                 File f = new File(configFileName);
-                if(!f.exists() || f.isDirectory()) {
+                if (!f.exists() || f.isDirectory()) {
                     System.out.println("Error! Incorrect file path!");
                     System.exit(1);
                 }
-                ECSClient ecsClient =  new ECSClient(configFileName);
+                ECSClient ecsClient = new ECSClient(configFileName);
                 ecsClient.run();
             }
         } catch (IOException e) {

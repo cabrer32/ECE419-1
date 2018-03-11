@@ -13,7 +13,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.*;
 
 public class ECS {
-    private static Logger logger =  Logger.getRootLogger();
+    private static Logger logger = Logger.getRootLogger();
     private static final String SCRIPT_TEXT = "ssh -n %s nohup java -jar /Users/wuqili/Desktop/ECE419/M2/m2-server.jar %s %s %s %s %s %s &";
 
     private Gson gson;
@@ -31,12 +31,15 @@ public class ECS {
     private static final String CONNECTION_ADDR_PORT = "2181";
     private static final String ROOT_PATH = "/ecs";
     private static final String NODE_PATH_SUFFIX = "/ecs/";
-    /** if the service is made up of any servers **/
+
+    /**
+     * if the service is made up of any servers
+     **/
 //    private boolean running = false;
 
     public ECS(String configFileName) {
         gson = new Gson();
-        this.configFileName =  configFileName;
+        this.configFileName = configFileName;
         // print heartbeat message
         Logger.getLogger("org.apache.zookeeper").setLevel(Level.ERROR);
     }
@@ -66,9 +69,9 @@ public class ECS {
             serverRepo.last().setEndingHashValue(serverRepo.first().getStartingHashValue());
             Iterator itr = serverRepo.iterator();
             ECSNode currentNode, nextNode;
-            if (itr.hasNext()){
+            if (itr.hasNext()) {
                 currentNode = (ECSNode) itr.next();
-                while (itr.hasNext()){
+                while (itr.hasNext()) {
                     nextNode = (ECSNode) itr.next();
                     currentNode.setEndingHashValue(nextNode.getStartingHashValue());
                     currentNode = nextNode;
@@ -117,6 +120,16 @@ public class ECS {
         return serversTaken;
     }
 
+    public void sendMetedata(IECSNode node) {
+        String json = new Gson().toJson(serverRepoTaken);
+        zkWatch.writeData(NODE_PATH_SUFFIX + node.getNodeName(), json);
+    }
+
+    public void startAllNodes() {
+        for (IECSNode node : serverRepoTaken)
+            sendMetedata(node);
+    }
+
     public void executeScript(ECSNode node) {
         String script = String.format(SCRIPT_TEXT, LOCAL_HOST, node.getNodeName(),CONNECTION_ADDR_HOST,
                 CONNECTION_ADDR_PORT, node.getNodePort(), node.getCacheStrategy(), node.getCachesize());
@@ -161,14 +174,7 @@ public class ECS {
         }
     }
 
-    public boolean notifyAllServerNode() {
-        boolean ifAnySuccess = false;
-        String json = new Gson().toJson(serverRepoTaken);
-        for (IECSNode node : serverRepoTaken) {
-            ifAnySuccess = ifAnySuccess || zkWatch.writeData(NODE_PATH_SUFFIX + node.getNodeName(), json);
-        }
-        return ifAnySuccess;
-    }
+
 
     public void notifySelectedServerNode(TreeSet<IECSNode> serversTaken, int awaitTiemout) {
         String json = new Gson().toJson(serverRepoTaken);
@@ -186,7 +192,17 @@ public class ECS {
         return zkWatch.deleteAllNodes(ROOT_PATH, NODE_PATH_SUFFIX, serverRepoTaken);
     }
 
+    public void setSemaphore(int count){
+        zkWatch.setSemaphore(count);
+    }
+
     public TreeSet<IECSNode> getNodes() {
         return serverRepoTaken;
+    }
+
+    public void notifyPrecessor(Collection<IECSNode> serversTaken) {
+        for(IECSNode node : serverRepoTaken) {
+
+        }
     }
 }
