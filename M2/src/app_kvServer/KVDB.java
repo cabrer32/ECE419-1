@@ -7,6 +7,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import static java.lang.Math.abs;
@@ -34,11 +35,16 @@ public class KVDB {
 
     private String name;
 
+    private String file_path;
+
     public KVDB(String name) throws IOException {
 
         this.name = name;
+        file_path = "KVDB/" + this.name + "/db";
+
         initializeDB();
     }
+
 
     private void initializeDB() throws IOException {
         logger.info("Initialize DB... ");
@@ -55,7 +61,7 @@ public class KVDB {
             //Create two files into DB directory
             for (int i = 0; i < 2; i++) {
                 //Create a file with name DB#
-                File DBfile = new File("KVDB/" + name + "/db" + String.valueOf(i));
+                File DBfile = new File(file_path + String.valueOf(i));
                 ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 
                 DBfile.createNewFile();
@@ -98,14 +104,14 @@ public class KVDB {
         for (int i = 0; i < fileNumber; i++) {
             lockList.get(i).writeLock().lock();
 
-            File DBfile = new File("KVDB/db" + String.valueOf(i));
+            File DBfile = new File(file_path + String.valueOf(i));
             DBfile.delete();
 
             lockList.get(i).writeLock().unlock();
             ;
         }
 
-        File DB = new File("KVDB");
+        File DB = new File("KVDB/" + name);
         DB.delete();
 
         logger.info("Done Delete directory... ");
@@ -193,6 +199,36 @@ public class KVDB {
         return null;
     }
 
+    public HashMap<String, String> getRangeKV(String[] range) throws IOException {
+
+        String from = range[0];
+        String to = range[0];
+
+        boolean edge = from.compareTo(to) > 0;
+
+        HashMap<String, String> map = new HashMap<String, String>();
+
+        long count = NumberOfTotalBlock() - 1;
+        while (count >= 0) {
+
+            String key = getKeyAtBlock(count);
+            if (!key.equals("")) {
+                if (edge) {
+                    if (key.compareTo())
+
+                } else {
+
+                }
+
+            }
+
+            count--;
+        }
+
+
+        return map;
+    }
+
     public boolean extend() throws IOException {
 
         return false;
@@ -204,7 +240,7 @@ public class KVDB {
     private boolean checkBlock(long blockIndex, boolean type) throws IOException {
 
         int i = (int) (blockIndex / fileBlock);
-        File DBfile = new File("KVDB/db" + String.valueOf(i));
+        File DBfile = new File(file_path + String.valueOf(i));
         RandomAccessFile file = new RandomAccessFile(DBfile, "r");
 
         lockList.get(i).readLock().lock();
@@ -223,7 +259,7 @@ public class KVDB {
     //get the key at given block
     private String getKeyAtBlock(long blockIndex) throws IOException {
         int i = (int) (blockIndex / fileBlock);
-        File DBfile = new File("KVDB/db" + String.valueOf(i));
+        File DBfile = new File(file_path + String.valueOf(i));
         RandomAccessFile file = new RandomAccessFile(DBfile, "r");
 
         lockList.get(i).readLock().lock();
@@ -256,7 +292,7 @@ public class KVDB {
     //get the key at given block
     private String getValueAtBlock(long blockIndex) throws IOException {
         int i = (int) (blockIndex / fileBlock);
-        File DBfile = new File("KVDB/db" + String.valueOf(i));
+        File DBfile = new File(file_path + String.valueOf(i));
         RandomAccessFile file = new RandomAccessFile(DBfile, "r");
 
         lockList.get(i).readLock().lock();
@@ -282,7 +318,7 @@ public class KVDB {
     private void writeKeyValueAtBlock(long blockIndex, String K, String V) throws IOException {
 
         int i = (int) (blockIndex / fileBlock);
-        File DBfile = new File("KVDB/db" + String.valueOf(i));
+        File DBfile = new File(file_path + String.valueOf(i));
         RandomAccessFile file = new RandomAccessFile(DBfile, "rw");
 
         lockList.get(i).writeLock().lock();
