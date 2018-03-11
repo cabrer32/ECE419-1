@@ -46,19 +46,27 @@ public class ECSClient implements IECSClient {
     @Override
     public boolean stop() {
         // TODO
+        boolean ifSuccess = false;
         if (ecs != null) {
-            return ecs.stop();
+            ifSuccess = ecs.stop();
+            if (ifSuccess) {
+                running = false;
+            }
         }
-        return false;
+        return ifSuccess;
     }
 
     @Override
     public boolean shutdown() {
         // TODO
+        boolean ifSuccess = false;
         if (ecs != null) {
-            return ecs.shutdown();
+            ifSuccess = ecs.shutdown();
+            if (ifSuccess) {
+                running = false;
+            }
         }
-        return false;
+        return ifSuccess;
     }
 
     @Override
@@ -149,14 +157,26 @@ public class ECSClient implements IECSClient {
     public void handleCommand(String cmdLine) {
         String[] tokens = cmdLine.split("\\s+");
 
-        if (tokens[0].equals("notifySelectedServerNode")){
-            this.start();
+        if (tokens[0].equals("start")){
+            if (!this.start()) {
+                printError("Start failed!");
+            } else {
+                System.out.println("Start successfully!");
+            }
 
         } else if(tokens[0].equals("stop")) {
-            this.stop();
+            if (!this.stop()) {
+                printError("Stop failed!");
+            } else {
+                System.out.println("Stop successfully!");
+            }
 
         } else if(tokens[0].equals("shutdown")) {
-            this.shutdown();
+            if (!this.shutdown()) {
+                printError("Shutdown failed!");
+            } else {
+                System.out.println("Shutdown successfully!");
+            }
 
         } else if(tokens[0].equals("addnode")) {
             if(tokens.length == 3) {
@@ -183,6 +203,20 @@ public class ECSClient implements IECSClient {
                 }
             } else {
                 printError("Usage: addnode <count> <cache strategy> <cache size>");
+            }
+
+        } else if(tokens[0].equals("removenode")) {
+            if(tokens.length == 2) {
+                String serverName = tokens[1];
+                ArrayList<String> nodeNames =  new ArrayList<>();
+                nodeNames.add(serverName);
+                if(!this.removeNodes(nodeNames)) {
+                    printError("Failed to remove nodes!");
+                } else  {
+                    System.out.println("Nodes removed successfully!");
+                }
+            } else {
+                printError("Usage: removenode <server name>");
             }
 
         } else if(tokens[0].equals("logLevel")) {
