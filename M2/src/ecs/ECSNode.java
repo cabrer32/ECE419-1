@@ -9,8 +9,6 @@ public class ECSNode implements IECSNode, Comparable<ECSNode>{
     private int cachesize;
     private int port;
 
-    public ECSNode(){}
-
     public ECSNode(String name, String host, int port, String startingHashValue) {
         this.name = name;
         this.host = host;

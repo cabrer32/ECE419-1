@@ -87,8 +87,6 @@ public class KVServer implements IKVServer {
         this.zkHostname = zkHostname;
         this.zkPort = zkPort;
 
-        System.out.println(zkHostname);
-        System.out.println(zkPort);
         //Initialize server watch
         this.zkWatch = new KVServerWatcher(logger, this, this.zkHostname + ":" + this.zkPort, this.name);
         this.zkWatch.init();
@@ -405,7 +403,6 @@ public class KVServer implements IKVServer {
                 server.initKVServer(Integer.parseInt(args[3]), Integer.parseInt(args[5]), args[4]);
 
                 new ServerThread(server).run();
-
             }
         } catch (IOException e) {
             System.out.println("Error! Unable to initialize logger!");
