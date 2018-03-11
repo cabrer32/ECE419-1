@@ -247,7 +247,7 @@ public class ECSClient implements IECSClient {
 
         } else if (tokens[0].equals("quit")) {
             stop = true;
-//            disconnect();
+            this.shutdown();
             System.out.println(PROMPT + "Application exit!");
 
         } else {
