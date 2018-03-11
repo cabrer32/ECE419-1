@@ -16,5 +16,3 @@ M2/bin/*
 M2/*.jar
 M2/KVDB/*
 M2/.idea/workspace.xml
-*.xml
-*.iml

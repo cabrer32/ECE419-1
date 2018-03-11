@@ -159,6 +159,16 @@ public class KVServer implements IKVServer {
         this.serversTaken = serversTaken;
     }
 
+    public void DBput(String key, String value){
+        try{
+            logger.info("put to DB " + key);
+            db.putKV(key, value);
+        }catch (IOException e){
+            logger.error("Cannot write to file "+ e);
+        }
+
+    }
+
     @Override
     public int getPort() {
         return port;
@@ -358,6 +368,8 @@ public class KVServer implements IKVServer {
 
     @Override
     public boolean moveData(String[] hashRange, String targetName) throws Exception {
+        db.getRangeKV(hashRange);
+
 
         return false;
     }

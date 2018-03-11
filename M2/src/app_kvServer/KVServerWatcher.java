@@ -14,9 +14,9 @@ import org.apache.zookeeper.ZooDefs.Ids;
 import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.data.Stat;
 
+import java.io.RandomAccessFile;
 import java.lang.reflect.Type;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -93,6 +93,10 @@ public class KVServerWatcher {
      */
     private Gson gson;
 
+    /***
+     * writedata countDown
+     */
+    CountDownLatch dataSemaphore = null;
 
     //constructor
     KVServerWatcher(Logger logger, KVServer kvserver, String zkAddress, String name) {
@@ -294,17 +298,18 @@ public class KVServerWatcher {
                             if(data.equals("finished")){
                                 exists(path, null);
                             }else{
-                                
+                                Map.Entry<String,String> kv = parseJsonEntry(data);
+                                kvServer.DBput(kv.getKey(),kv.getValue());
                             }
-
-
-
-
-
                             break;
                         case NodeDeleted:
 
-                            logger.info("stop KVserver " + KVname);
+                            logger.info("continue to send data " + KVname);
+
+                            exists(path, dataWatcher);
+
+                            if(dataSemaphore != null)
+                                dataSemaphore.countDown();
 
                             break;
                         default:
@@ -341,6 +346,21 @@ public class KVServerWatcher {
         }
         return null;
     }
+
+    Map.Entry<String, String> parseJsonEntry(String data){
+        Type Type = new TypeToken<Map.Entry<String,String>>() {
+        }.getType();
+
+        return gson.fromJson(data, Type);
+    }
+
+    String entryToJson(Map.Entry<String, String> kv){
+        Type Type = new TypeToken<Map.Entry<String,String>>() {
+        }.getType();
+
+        return gson.toJson(kv,Type);
+    }
+
 
     void stopServer() {
         kvServer.stop();
@@ -386,7 +406,7 @@ public class KVServerWatcher {
                     try {
                         kvServer.moveData(range, meta.get(i).getNodeName());
                     } catch (Exception e) {
-                        logger.error("Cannot mvoe data to " + meta.get(i).getNodeName());
+                        logger.error("Cannot move data to " + meta.get(i).getNodeName());
                         logger.error(e);
                     }
                 }
@@ -396,10 +416,28 @@ public class KVServerWatcher {
         }
     }
 
-    void moveData(String server) {
-        kvServer.lockWrite();
 
 
-        kvServer.unlockWrite();
+    void moveData(String key, String value, String server) {
+        String dest = childPath + "/data";
+
+        if(key.equals("")){
+            logger.info("Finished Transfer data");
+            writeData(dest, "success");
+        }
+        else{
+            logger.info("Sending data key => " + key);
+            dataSemaphore = new CountDownLatch(1);
+            Map.Entry<String,String> kv = new AbstractMap.SimpleEntry<String, String>(key,value);
+
+            writeData(dest, entryToJson(kv));
+
+            try {
+                dataSemaphore.await();
+            }catch(Exception e){
+                logger.error("Cannot send data ");
+            }
+
+        }
     }
 }
