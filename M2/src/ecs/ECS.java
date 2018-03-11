@@ -174,10 +174,17 @@ public class ECS {
         }
     }
 
-
+    public boolean notifyAllServerNode() {
+        boolean ifAnySuccess = false;
+        String json = gson.toJson(serverRepoTaken);
+        for (IECSNode node : serverRepoTaken) {
+            ifAnySuccess = ifAnySuccess || zkWatch.writeData(NODE_PATH_SUFFIX + node.getNodeName(), json);
+        }
+        return ifAnySuccess;
+    }
 
     public void notifySelectedServerNode(TreeSet<IECSNode> serversTaken, int awaitTiemout) {
-        String json = new Gson().toJson(serverRepoTaken);
+        String json = gson.toJson(serverRepoTaken);
         for (IECSNode node : serversTaken) {
             zkWatch.writeData(NODE_PATH_SUFFIX + node.getNodeName(), json);
             zkWatch.awaitNodes(1, awaitTiemout);
@@ -201,8 +208,32 @@ public class ECS {
     }
 
     public void notifyPrecessor(Collection<IECSNode> serversTaken) {
-        for(IECSNode node : serverRepoTaken) {
-
+        TreeSet<IECSNode> tmp = (TreeSet<IECSNode>) this.serverRepoTaken.clone();
+        tmp.removeAll(serversTaken);
+        Iterator itr1 = serverRepo.iterator();
+        ECSNode node1 = null;
+        ECSNode smallerNode;
+        ECSNode largerNode;
+        while (itr1.hasNext()) {
+            smallerNode = null;
+            largerNode = null;
+            node1 = (ECSNode) itr1.next();
+            for(IECSNode node2 : tmp) {
+                if (node1.compareTo((ECSNode) node2) <= 0) {
+                    largerNode = (ECSNode) node2;
+                } else {
+                    smallerNode = (ECSNode) node2;
+                }
+                if (smallerNode == null && largerNode != null) {
+                    sendMetedata(tmp.last());
+                    break;
+                } else if (smallerNode != null && largerNode != null) {
+                    sendMetedata(smallerNode);
+                } else;
+            }
+            if(largerNode == null) {
+                sendMetedata(smallerNode);
+            }
         }
     }
 }

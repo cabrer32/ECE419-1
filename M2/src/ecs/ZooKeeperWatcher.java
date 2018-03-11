@@ -180,14 +180,10 @@ public class ZooKeeperWatcher implements Watcher {
 
     public boolean deleteAllNodes(String rootPath, String nodePathSuffix, TreeSet<IECSNode> serverRepoTaken) {
         boolean ifAllSuccess = true;
-
-        for (IECSNode node : serverRepoTaken) {
+        for(IECSNode node : serverRepoTaken) {
             ifAllSuccess = ifAllSuccess && this.deleteNode(nodePathSuffix + node.getNodeName());
         }
-
-        if (this.exists(rootPath, this) != null) {
-            ifAllSuccess = ifAllSuccess && this.deleteNode(rootPath);
-        }
+        ifAllSuccess = ifAllSuccess && this.deleteNode(rootPath);
         return ifAllSuccess;
     }
 }

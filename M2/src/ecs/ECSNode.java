@@ -1,6 +1,9 @@
 package ecs;
 
 public class ECSNode implements IECSNode, Comparable<ECSNode>{
+    private static final String STARTING_HASH_VALUE = "00000000000000000000000000000000";
+    private static final String ENDING_HASH_VALUE = "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF";
+
     private String name;
     private String host;
     private String startingHashValue;
@@ -52,6 +55,18 @@ public class ECSNode implements IECSNode, Comparable<ECSNode>{
         return cachesize;
     }
 
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public void setHost(String host) {
+        this.host = host;
+    }
+
+    public void setPort(int port) {
+        this.port = port;
+    }
+
     public void setStartingHashValue(String startingHashValue) {
         this.startingHashValue = startingHashValue;
     }
@@ -68,8 +83,19 @@ public class ECSNode implements IECSNode, Comparable<ECSNode>{
         this.cachesize = cachesize;
     }
 
+    public boolean contains(String hashValue) {
+        if ((hashValue.compareTo(startingHashValue) >= 0) && (hashValue.compareTo(endingHashValue) < 0)) {
+            return true;
+        }
+        return false;
+    }
+
     @Override
     public int compareTo(ECSNode o) {
+        if ((this.getStartingHashValue().compareTo(STARTING_HASH_VALUE) >= 0)
+                && (o.getStartingHashValue().compareTo(endingHashValue) <= 0)) {
+            return 1;
+        }
         return this.getStartingHashValue().compareTo(o.getStartingHashValue());
     }
 }
