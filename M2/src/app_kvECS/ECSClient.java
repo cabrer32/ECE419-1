@@ -97,7 +97,7 @@ public class ECSClient implements IECSClient {
                 for(IECSNode node : serversTaken)
                     ecs.sendMetedata(node);
 
-            ecs.notifyPrecessor(serversTaken);
+//            ecs.notifyPrecessor(serversTaken);
 
         } else {
             logger.warn("Not enough servers available for allocation!");

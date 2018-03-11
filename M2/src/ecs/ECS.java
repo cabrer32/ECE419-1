@@ -14,7 +14,8 @@ import java.util.*;
 
 public class ECS {
     private static Logger logger = Logger.getRootLogger();
-    private static final String SCRIPT_TEXT = "ssh -n %s nohup java -jar /Users/wuqili/Desktop/ECE419/M2/m2-server.jar %s %s %s %s %s %s &";
+//    private static final String SCRIPT_TEXT = "ssh -n %s nohup java -jar /Users/wuqili/Desktop/ECE419/M2/m2-server.jar %s %s %s %s %s %s &";
+    private static final String SCRIPT_TEXT = "ssh -n %s nohup java -jar //Users/pannnnn/UTcourses/ECE419/ece419/M2/m2-server.jar %s %s %s %s %s %s &";
 
     private Gson gson;
     private ZooKeeperWatcher zkWatch;
@@ -100,7 +101,7 @@ public class ECS {
         for (Integer i : serverRepoMapping.values()) {
             availableNodes += i;
         }
-        if (availableNodes <= count) {
+        if (availableNodes < count) {
             return null;
         } else {
             int i = 0;
@@ -111,8 +112,9 @@ public class ECS {
                     serversTaken.add(node);
                     serverRepoMapping.put(node, 0);
                     serverRepoTaken.add(node);
+                    i = i + 1;
                 }
-                if (++i == count) {
+                if (i == count) {
                     break;
                 }
             }
