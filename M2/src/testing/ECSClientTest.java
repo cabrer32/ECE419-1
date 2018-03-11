@@ -26,9 +26,9 @@ public class ECSClientTest extends TestCase {
 
     @Test
     public void testAddNodes() {
-//        ecsClient.addNodes(1, "FIFO", 100);
-//        ecsClient.addNodes(1, "LRU", 70);
-        ecsClient.addNodes(3, "LFU", 50);
+        ecsClient.addNodes(1, "FIFO", 100);
+        ecsClient.addNodes(1, "LRU", 70);
+        ecsClient.addNodes(1, "LFU", 50);
 
     }
 

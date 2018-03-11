@@ -92,10 +92,10 @@ public class ECSNode implements IECSNode, Comparable<ECSNode>{
 
     @Override
     public int compareTo(ECSNode o) {
-        if ((this.getStartingHashValue().compareTo(STARTING_HASH_VALUE) >= 0)
-                && (o.getStartingHashValue().compareTo(endingHashValue) <= 0)) {
-            return 1;
-        }
+//        if ((this.getStartingHashValue().compareTo(STARTING_HASH_VALUE) >= 0)
+//                && (o.getStartingHashValue().compareTo(endingHashValue) <= 0)) {
+//            return 1;
+//        }
         return this.getStartingHashValue().compareTo(o.getStartingHashValue());
     }
 }

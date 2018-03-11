@@ -107,81 +107,83 @@ public class KVStore implements KVCommInterface {
 		// TODO Auto-generated method stub
 		KVMessage msgReq = null;
 		KVMessage msgRes = null;
-		while(true) {
-			if (serverList == null) {
-				CommunicationModule ci = communicationModules.get(firstServerName);
-				msgReq = new Message(KVMessage.StatusType.PUT, key, value);
-				msgRes = sendMessage(ci, msgReq);
-			} else {
-				String keyHashValue = getHashValue(key);
-				IECSNode targetNode = null;
-				for (IECSNode node : serverList) {
-					if (((ECSNode) node).contains(keyHashValue)) {
-						targetNode = node;
-					}
-				}
-				CommunicationModule ci = communicationModules.get(targetNode.getNodeName());
-				if(ci == null) {
-					ci = new CommunicationModule(targetNode.getNodeHost(), targetNode.getNodePort());
-					ci.connect();
-					ci.setStream();
-					communicationModules.put(targetNode.getNodeName(), ci);
-					msgReq = new Message(KVMessage.StatusType.PUT, key, value);
-					msgRes = sendMessage(ci, msgReq);
-				} else {
-					msgReq = new Message(KVMessage.StatusType.PUT, key, value);
-					msgRes = sendMessage(ci, msgReq);
-				}
-			}
-			if (msgReq != null) {
-				if (msgRes.getStatus().equals("SERVER_NOT_RESPONSIBLE")) {
-					serverList = gson.fromJson(msgRes.getValue(), new TypeToken<TreeSet<IECSNode>>(){}.getType());
-				} else if (msgRes.getStatus().equals("SERVER_STOPPED")) {
-					for (ClientSocketListener listener : listeners) {
-						listener.handleNewMessage("Server stopped! Please try again later!");
-					}
-					break;
-				} else if (msgRes.getStatus().equals("SERVER_WRITE_LOCK ")) {
-					for (ClientSocketListener listener : listeners) {
-						listener.handleNewMessage("Server is leaving or joining! Please try again later!");
-					}
-					break;
-				} else {
-					break;
-				}
-			}
-		}
+//		while(true) {
+//			if (serverList == null) {
+//				CommunicationModule ci = communicationModules.get(firstServerName);
+//				msgReq = new Message(KVMessage.StatusType.PUT, key, value);
+//				msgRes = sendMessage(ci, msgReq);
+//			} else {
+//				String keyHashValue = getHashValue(key);
+//				IECSNode targetNode = null;
+//				for (IECSNode node : serverList) {
+//					if (((ECSNode) node).contains(keyHashValue)) {
+//						targetNode = node;
+//					}
+//				}
+//				CommunicationModule ci = communicationModules.get(targetNode.getNodeName());
+//				if(ci == null) {
+//					ci = new CommunicationModule(targetNode.getNodeHost(), targetNode.getNodePort());
+//					ci.connect();
+//					ci.setStream();
+//					communicationModules.put(targetNode.getNodeName(), ci);
+//					msgReq = new Message(KVMessage.StatusType.PUT, key, value);
+//					msgRes = sendMessage(ci, msgReq);
+//				} else {
+//					msgReq = new Message(KVMessage.StatusType.PUT, key, value);
+//					msgRes = sendMessage(ci, msgReq);
+//				}
+//			}
+//			if (msgReq != null) {
+//				if (msgRes.getStatus().equals("SERVER_NOT_RESPONSIBLE")) {
+//					serverList = gson.fromJson(msgRes.getValue(), new TypeToken<TreeSet<IECSNode>>(){}.getType());
+//				} else if (msgRes.getStatus().equals("SERVER_STOPPED")) {
+//					for (ClientSocketListener listener : listeners) {
+//						listener.handleNewMessage("Server stopped! Please try again later!");
+//					}
+//					break;
+//				} else if (msgRes.getStatus().equals("SERVER_WRITE_LOCK ")) {
+//					for (ClientSocketListener listener : listeners) {
+//						listener.handleNewMessage("Server is leaving or joining! Please try again later!");
+//					}
+//					break;
+//				} else {
+//					break;
+//				}
+//			}
+//		}
 		return msgRes;
 	}
 
 	@Override
 	public KVMessage get(String key) throws IOException {
 		// TODO Auto-generated method stub
-		KVMessage msgReq = new Message(KVMessage.StatusType.GET, key, "");
-		KVMessage msgRes = sendMessage(msgReq);
-
-		if (msgRes.getStatus() == KVMessage.StatusType.SERVER_NOT_RESPONSIBLE) {
-			//diconnect the server
-			if (isConnected()) {
-				disconnect();
-			}
-			// find hash, and look for that has in latest metatable just received
-			getHashValue(key);
-		}
-		if (msgRes.getStatus() == KVMessage.StatusType.SERVER_STOPPED) {
-			for (ClientSocketListener listener : listeners) {
-				listener.handleNewMessage("Server stopped! Please try again later!");
-			}
-		}
-		if (msgRes.getStatus() == KVMessage.StatusType.SERVER_WRITE_LOCK) {
-			// display error message
-			System.out.println("SERVER_WRITE_LOCK");
-			//diconnect the server
-			if (isConnected()) {
-				disconnect();
-			}
-		}
-		//get the hash
+		KVMessage msgReq = null;
+		KVMessage msgRes = null;
+//		KVMessage msgReq = new Message(KVMessage.StatusType.GET, key, "");
+//		KVMessage msgRes = sendMessage(msgReq);
+//
+//		if (msgRes.getStatus() == KVMessage.StatusType.SERVER_NOT_RESPONSIBLE) {
+//			//diconnect the server
+//			if (isConnected()) {
+//				disconnect();
+//			}
+//			// find hash, and look for that has in latest metatable just received
+//			getHashValue(key);
+//		}
+//		if (msgRes.getStatus() == KVMessage.StatusType.SERVER_STOPPED) {
+//			for (ClientSocketListener listener : listeners) {
+//				listener.handleNewMessage("Server stopped! Please try again later!");
+//			}
+//		}
+//		if (msgRes.getStatus() == KVMessage.StatusType.SERVER_WRITE_LOCK) {
+//			// display error message
+//			System.out.println("SERVER_WRITE_LOCK");
+//			//diconnect the server
+//			if (isConnected()) {
+//				disconnect();
+//			}
+//		}
+//		//get the hash
 		return msgRes;
 	}
 
