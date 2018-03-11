@@ -214,20 +214,50 @@ public class KVDB {
             String key = getKeyAtBlock(count);
             if (!key.equals("")) {
                 if (edge) {
-                    if (key.compareTo())
-
+                    if (key.compareTo(from) <= 0 || key.compareTo(to) >= 0){
+                        map.put(key, getValueAtBlock(count));
+                    }
                 } else {
-
+                    if (key.compareTo(from) >= 0 && key.compareTo(to) <= 0){
+                        map.put(key, getValueAtBlock(count));
+                    }
                 }
-
             }
-
             count--;
         }
 
 
         return map;
     }
+
+
+    public void removeRangeKV(String[] range) throws IOException {
+
+        String from = range[0];
+        String to = range[0];
+
+        boolean edge = from.compareTo(to) > 0;
+
+
+        long count = NumberOfTotalBlock() - 1;
+        while (count >= 0) {
+
+            String key = getKeyAtBlock(count);
+            if (!key.equals("")) {
+                if (edge) {
+                    if (key.compareTo(from) <= 0 || key.compareTo(to) >= 0){
+                        writeKeyValueAtBlock(count,key,"");
+                    }
+                } else {
+                    if (key.compareTo(from) >= 0 && key.compareTo(to) <= 0){
+                        writeKeyValueAtBlock(count,key,"");
+                    }
+                }
+            }
+            count--;
+        }
+    }
+
 
     public boolean extend() throws IOException {
 
@@ -328,7 +358,7 @@ public class KVDB {
         //going to the block location
         file.seek(location);
 
-        if (V == null) {
+        if (V == null || V.equals("")) {
             file.writeBoolean(false);
             lockList.get(i).writeLock().unlock();
             file.close();

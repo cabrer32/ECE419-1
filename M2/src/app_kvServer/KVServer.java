@@ -14,6 +14,9 @@ import org.apache.zookeeper.Watcher;
 import java.util.ArrayList;
 import java.io.IOException;
 import java.net.*;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
 
 
 public class KVServer implements IKVServer {
@@ -368,8 +371,24 @@ public class KVServer implements IKVServer {
 
     @Override
     public boolean moveData(String[] hashRange, String targetName) throws Exception {
-        db.getRangeKV(hashRange);
+        try{
+            HashMap<String, String> map = db.getRangeKV(hashRange);
 
+            Iterator it = map.entrySet().iterator();
+
+            logger.info("Start transer data");
+            while (it.hasNext()) {
+                Map.Entry<String,String> pair = (Map.Entry)it.next();
+                zkWatch.moveData(pair.getKey(),pair.getValue(), targetName);
+            }
+
+            logger.info("Start removing data");
+            db.removeRangeKV(hashRange);
+            logger.info("Finished removing data");
+
+        }catch (Exception e){
+            logger.info("cannot get ranged kV");
+        }
 
         return false;
     }
