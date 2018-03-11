@@ -189,6 +189,14 @@ public class ZooKeeperWatcher implements Watcher {
 
     public boolean deleteAllNodes(String rootPath, String nodePathSuffix, TreeSet<IECSNode> serverRepoTaken) {
         boolean ifAllSuccess = true;
+        logger.info("Deleting all nodes");
+
+        try {
+            this.zk.getChildren(PARENT_PATH, false);
+        }catch(Exception e){
+            logger.error("Cannot unwatch children");
+        }
+
         for(IECSNode node : serverRepoTaken) {
             ifAllSuccess = ifAllSuccess && this.deleteNode(nodePathSuffix + node.getNodeName());
         }
