@@ -84,36 +84,39 @@ public class ECSClient implements IECSClient {
             for (Iterator<IECSNode> iterator = serversTaken.iterator(); iterator.hasNext(); ) {
                 ecs.executeScript((ECSNode) iterator.next());
             }
+
+            try {
+
+                this.awaitNodes(count, AWAIT_TIEMOUT);
+
+            } catch (Exception e) {
+                logger.error(e.getMessage());
+            }
+
+            if(running)
+                for(IECSNode node : serversTaken)
+                    ecs.sendMetedata(node);
+
+            ecs.notifyPrecessor(serversTaken);
+
         } else {
-            logger.info("Not enough servers available for allocation!");
-        }
-        try {
-            this.awaitNodes(count, AWAIT_TIEMOUT);
-        } catch (Exception e) {
-            logger.error(e.getMessage());
+            logger.warn("Not enough servers available for allocation!");
         }
 
-        if(running)
-            for(IECSNode node : serversTaken)
-                ecs.sendMetedata(node);
-                ecs.notifyPrecessor(serversTaken);
-
-        ecs.notifySelectedServerNode((TreeSet<IECSNode>) serversTaken, AWAIT_TIEMOUT);
         return serversTaken;
     }
 
     @Override
     public Collection<IECSNode> setupNodes(int count, String cacheStrategy, int cacheSize) {
-        // TODO
-        TreeSet<IECSNode> serversTaken = ecs.arrangeECSNodes(count, cacheStrategy, cacheSize);
-        ecs.registerWatchEvent(serversTaken);
-        return serversTaken;
+
+        return ecs.arrangeECSNodes(count, cacheStrategy, cacheSize);
     }
 
     @Override
     public boolean awaitNodes(int count, int timeout) throws Exception {
-        // TODO
-        return ecs.awaitNodes(count, timeout);
+        logger.info("waiting for nodes to be init");
+        ecs.awaitNodes(timeout);
+        return true;
     }
 
     @Override

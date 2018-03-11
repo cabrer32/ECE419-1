@@ -164,32 +164,10 @@ public class ECS {
         return ifSuccess;
     }
 
-    public boolean awaitNodes(int count, int timeout) {
-        return zkWatch.awaitNodes(count, timeout);
+    public boolean awaitNodes(int timeout) {
+        return zkWatch.awaitNodes(timeout);
     }
 
-    public void registerWatchEvent(TreeSet<IECSNode> serversTaken) {
-        for(IECSNode node : serversTaken) {
-            zkWatch.exists(NODE_PATH_SUFFIX + node.getNodeName(), true);
-        }
-    }
-
-    public boolean notifyAllServerNode() {
-        boolean ifAnySuccess = false;
-        String json = gson.toJson(serverRepoTaken);
-        for (IECSNode node : serverRepoTaken) {
-            ifAnySuccess = ifAnySuccess || zkWatch.writeData(NODE_PATH_SUFFIX + node.getNodeName(), json);
-        }
-        return ifAnySuccess;
-    }
-
-    public void notifySelectedServerNode(TreeSet<IECSNode> serversTaken, int awaitTiemout) {
-        String json = gson.toJson(serverRepoTaken);
-        for (IECSNode node : serversTaken) {
-            zkWatch.writeData(NODE_PATH_SUFFIX + node.getNodeName(), json);
-            zkWatch.awaitNodes(1, awaitTiemout);
-        }
-    }
 
     public boolean stop() {
         return zkWatch.writeData(ROOT_PATH, "");

@@ -10,6 +10,7 @@ import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.data.Stat;
 import org.apache.log4j.Logger;
 
+import java.rmi.server.ExportException;
 import java.util.List;
 import java.util.TreeSet;
 import java.util.concurrent.CountDownLatch;
@@ -49,6 +50,7 @@ public class ZooKeeperWatcher implements Watcher {
             zk = new ZooKeeper(connectAddr, sessionTimeout, this);
             logger.info("Connecting to zookeeper server");
             connectedSemaphore.await();
+            this.zk.getChildren(PARENT_PATH, this);
         } catch (Exception e) {
             logger.error("Failed to connect zookeeper server " + e);
         }
@@ -70,20 +72,20 @@ public class ZooKeeperWatcher implements Watcher {
     /**
      * Create node with path
      */
-    public boolean createPath(String path, String data) {
+
+    public void createPath(String path, String data) {
         try {
-            Stat stat = this.zk.exists(path, false);
+            logger.info("Creating node at " + path);
+            Stat stat = this.zk.exists(path, this);
             if (stat == null) {
                 this.zk.create(path, data.getBytes(), Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
-                logger.info("Successfully create new node " + path);
             }
         } catch (Exception e) {
             logger.error("Failed to create new node " + path);
             logger.error(e);
-            return false;
         }
-        return true;
     }
+
 
     /**
      * update node
@@ -144,6 +146,7 @@ public class ZooKeeperWatcher implements Watcher {
         // watch event relative path
         String path = event.getPath();
 
+        logger.info("watch event is triggered " + event.toString());
 
         if (KeeperState.SyncConnected == keeperState) {
 
@@ -156,7 +159,11 @@ public class ZooKeeperWatcher implements Watcher {
             if (EventType.NodeChildrenChanged == eventType) {
                 logger.info("Change has been observed in children");
                 connectedSemaphore.countDown();
-                exists(PARENT_PATH, this);
+                try {
+                    this.zk.getChildren(PARENT_PATH, this);
+                }catch (Exception e){
+                    logger.error("cannot watch on children nodes");
+                }
             }
         } else {
             logger.error("Failed to connect to zookeeper server");
@@ -167,11 +174,13 @@ public class ZooKeeperWatcher implements Watcher {
         connectedSemaphore = new CountDownLatch(count);
     }
 
-    public boolean awaitNodes(int count, int timeout) {
+    public boolean awaitNodes(int timeout) {
 
         boolean ifNotTimeout = true;
+
         try {
             ifNotTimeout = connectedSemaphore.await(timeout, TimeUnit.MILLISECONDS);
+            logger.info("Finish waiting nodes " + ifNotTimeout);
         } catch (InterruptedException e) {
             logger.error("Await Nodes has been interrupted!");
         }
