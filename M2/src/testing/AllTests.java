@@ -2,6 +2,7 @@ package testing;
 
 import java.io.IOException;
 
+import app_kvECS.ECSClient;
 import common.module.ServerThread;
 import ecs.ECS;
 import org.apache.log4j.Level;
@@ -16,6 +17,7 @@ public class AllTests {
     static {
         try {
             new LogSetup("logs/testing/test.log", Level.ALL);
+
 
         } catch (IOException e) {
             System.out.println("Cannot initilize logger");

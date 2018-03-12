@@ -31,13 +31,7 @@ public class KVStoreTest extends TestCase {
         }
     }
 
-    @Override
-    protected void tearDown() {
-        thread.interrupt();
-        kvServer.close();
 
-        System.out.println("Server has been teared down");
-    }
 
     @Test
     public void testKVStoreConnection() {
@@ -47,9 +41,17 @@ public class KVStoreTest extends TestCase {
             kvClient.connect();
 
         } catch (Exception e) {
-            assertTrue(false);
+
             System.out.println("Error happend while connecting server " + e);
         }
+    }
+
+    @Override
+    protected void tearDown() {
+        thread.interrupt();
+        kvServer.close();
+
+        System.out.println("Server has been teared down");
     }
 
 

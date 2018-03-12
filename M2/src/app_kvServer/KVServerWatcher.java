@@ -359,6 +359,7 @@ public class KVServerWatcher {
                         node.getEndingHashValue().compareTo(oldRange[1]) <= 0) {
 
                     try {
+                        kvServer.stop();
                         kvServer.moveData(node.getNodeHashRange(), node.getNodeName());
 
                     } catch (Exception e) {
@@ -379,9 +380,9 @@ public class KVServerWatcher {
                     if (edge && node.getStartingHashValue().compareTo(oldRange[0]) <= 0 &&
                             node.getEndingHashValue().compareTo(oldRange[1]) >= 0) {
                         try {
-
+                            kvServer.lockWrite();
                             kvServer.moveData(node.getNodeHashRange(), node.getNodeName());
-
+                            kvServer.unlockWrite();
                         } catch (Exception e) {
                             logger.error("Error while moving data to " + node.getNodeName());
                         }

@@ -11,7 +11,7 @@ public class ServerThread extends Thread {
     }
 
     public void run() {
-        //kvServer.clearStorage();
+        kvServer.clearStorage();
         kvServer.run();
     }
 }
