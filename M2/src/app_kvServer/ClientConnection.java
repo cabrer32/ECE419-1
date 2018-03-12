@@ -3,13 +3,17 @@ package app_kvServer;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
+import com.google.gson.reflect.TypeToken;
 import common.messages.KVMessage;
 import common.messages.Message;
 import common.module.CommunicationModule;
+import ecs.ECSNode;
 import org.apache.log4j.Logger;
 
 import java.io.IOException;
+import java.lang.reflect.Type;
 import java.net.Socket;
+import java.util.ArrayList;
 
 
 /**
@@ -131,9 +135,33 @@ public class ClientConnection implements Runnable {
 
     }
 
+    private boolean compare(String key){
+        String[] range = server.getRange();
+
+        if(key.compareTo(range[0]) > 0 && key.compareTo(range[1]) < 0 )
+            return true;
+
+        return false;
+    }
+
+    String metaToJson(ArrayList<ECSNode> meta) {
+        try {
+            Type listType = new TypeToken<ArrayList<ECSNode>>() {
+            }.getType();
+            return gson.toJson(meta, listType);
+        } catch (JsonSyntaxException e) {
+            logger.error("Invalid Message syntax " + e.getMessage());
+        }
+        return null;
+    }
+
     private KVMessage get(String key) throws Exception {
         if (key.equals("") || key.contains(" ") || key.length() > 20) {
             return new Message(KVMessage.StatusType.GET_ERROR, key, "");
+        }
+
+        if(!compare(key)){
+            return new Message(KVMessage.StatusType.SERVER_NOT_RESPONSIBLE, key, metaToJson(server.getMetaData()));
         }
 
         String value = server.getKV(key);
@@ -146,6 +174,10 @@ public class ClientConnection implements Runnable {
     private KVMessage put(String key, String value) throws Exception {
         if (key.equals("") || key.contains(" ") || key.length() > 20 || (value != null && value.length() > 120000)) {
             return new Message(KVMessage.StatusType.PUT_ERROR, key, value);
+        }
+
+        if(!compare(key)){
+            return new Message(KVMessage.StatusType.SERVER_NOT_RESPONSIBLE, key, metaToJson(server.getMetaData()));
         }
 
         //case when deleting
