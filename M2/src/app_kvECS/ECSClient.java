@@ -127,7 +127,6 @@ public class ECSClient implements IECSClient {
 
     @Override
     public Map<String, IECSNode> getNodes() {
-        // TODO
         Map<String, IECSNode> map = new HashMap<>();
         TreeSet<IECSNode> allRunningNodes = ecs.getNodes();
         for (IECSNode node : allRunningNodes) {
@@ -138,7 +137,6 @@ public class ECSClient implements IECSClient {
 
     @Override
     public IECSNode getNodeByKey(String Key) {
-        // TODO
         TreeSet<IECSNode> allRunningNodes = ecs.getNodes();
         for (IECSNode node : allRunningNodes) {
             if (node.getNodeName() == Key) {

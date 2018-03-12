@@ -9,6 +9,8 @@ import org.junit.Test;
 import java.rmi.server.ExportException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 
 public class ECSClientTest extends TestCase {
 
@@ -18,7 +20,7 @@ public class ECSClientTest extends TestCase {
     @Override
     public void setUp() {
 
-
+        ecsClient = new ECSClient("ecs.config");
     }
 
     @Override
@@ -27,49 +29,42 @@ public class ECSClientTest extends TestCase {
         System.out.println("Server has been teared down");
     }
 
-
     @Test
-    public void testAddNodes() {
-        Collection<IECSNode> nodes = ecsClient.addNodes(4, "LFU", 50);
-
-        if(nodes == null || nodes.size() != 4)
-            assertTrue(false);
-    }
-
-    @Test
-    public void testWaitNodes() {
+    public void testECS() {
         try {
-
-
-            boolean s = ecsClient.awaitNodes(3, 5000);
-            assertTrue(s);
-        } catch (Exception e) {
-            assertTrue(false);
-            System.out.println("cannot wait nodes");
-        }
-    }
-
-    @Test
-    public void testRemoveNodes() {
-        try {
-
-
+            boolean s = false;
+            /** test add nodes */
             Collection<IECSNode> nodes = ecsClient.addNodes(4, "LFU", 50);
 
-            if(nodes == null || nodes.size() != 4)
+            if (nodes == null || nodes.size() != 4)
                 assertTrue(false);
 
 
+            /** test remove nodes */
             Collection<String> removenodes = new ArrayList<>();
 
             removenodes.add("server8");
 
-            boolean s = ecsClient.removeNodes(removenodes);
+            s = ecsClient.removeNodes(removenodes);
             assertTrue(s);
-        } catch (Exception e) {
-            System.out.println("cannot wait nodes " + e);
+
+            /** test get nodes */
+            Map<String, IECSNode> maps = ecsClient.getNodes();
+
+            assertTrue(maps != null);
+
+
+            /** test get nodes */
+            IECSNode node = ecsClient.getNodeByKey("0");
+
+            if(node == null)
+                assertTrue(false);
+
+
+
+        }catch (Exception e ){
+            System.out.println("Error happening " + e);
+            e.printStackTrace();
         }
     }
-
-
 }
