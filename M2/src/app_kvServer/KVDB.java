@@ -20,7 +20,7 @@ public class KVDB {
     ArrayList<ReentrantReadWriteLock> lockList;
 
     // constant fileSize, # of blocks in a file
-    private static final long fileBlock = 50;
+    private static final long fileBlock = 5000;
 
 
     /**

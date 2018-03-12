@@ -15,8 +15,7 @@ import java.util.*;
 
 public class ECS {
     private static Logger logger = Logger.getRootLogger();
-//    private static final String SCRIPT_TEXT = "ssh -n %s nohup java -jar /Users/wuqili/Desktop/ECE419/M2/m2-server.jar %s %s %s %s %s %s &";
-    private static final String SCRIPT_TEXT = "ssh -n %s nohup java -jar /Users/pannnnn/UTcourses/ECE419/ece419/M2/m2-server.jar %s %s %s %s %s %s &";
+    private static final String SCRIPT_TEXT = "ssh -n %s nohup java -jar m2-server.jar %s %s %s %s %s %s &";
 
     private Gson gson;
     private ZooKeeperWatcher zkWatch;
@@ -38,7 +37,6 @@ public class ECS {
      * if the service is made up of any servers
      **/
 //    private boolean running = false;
-
     public ECS(String configFileName) {
         gson = new Gson();
         this.configFileName = configFileName;
@@ -136,7 +134,7 @@ public class ECS {
     }
 
     public void sendMetedata(IECSNode node) {
-        logger.info("Sending latest metadata to "+ node.getNodeName());
+        logger.info("Sending latest metadata to " + node.getNodeName());
         String json = new Gson().toJson(serverRepoTaken);
         zkWatch.writeData(NODE_PATH_SUFFIX + node.getNodeName(), json);
     }
@@ -149,7 +147,7 @@ public class ECS {
     public void executeScript(ECSNode node) {
         zkWatch.clearNode(NODE_PATH_SUFFIX + node.getNodeName());
 
-        String script = String.format(SCRIPT_TEXT, LOCAL_HOST, node.getNodeName(),CONNECTION_ADDR_HOST,
+        String script = String.format(SCRIPT_TEXT, LOCAL_HOST, node.getNodeName(), CONNECTION_ADDR_HOST,
                 CONNECTION_ADDR_PORT, node.getNodePort(), node.getCacheStrategy(), node.getCachesize());
         Process proc;
         Runtime run = Runtime.getRuntime();
@@ -164,10 +162,10 @@ public class ECS {
     public boolean removeNodes(Collection<String> nodeNames) {
         boolean ifSuccess = true;
         int removedCount = 0;
-        for (Iterator<String> iterator = nodeNames.iterator(); iterator.hasNext();) {
-            for (IECSNode node: serverRepoTaken) {
+        for (Iterator<String> iterator = nodeNames.iterator(); iterator.hasNext(); ) {
+            for (IECSNode node : serverRepoTaken) {
                 String nodeName = node.getNodeName();
-                if (nodeName.equals(iterator.next())){
+                if (nodeName.equals(iterator.next())) {
                     if (zkWatch.deleteNode(NODE_PATH_SUFFIX + nodeName)) {
                         serverRepoTaken.remove(node);
                         serverRepoMapping.put(node, 1);
@@ -185,7 +183,6 @@ public class ECS {
     }
 
 
-
     public boolean awaitNodes(int timeout) {
         return zkWatch.awaitNodes(timeout);
     }
@@ -199,7 +196,7 @@ public class ECS {
         return zkWatch.deleteAllNodes(ROOT_PATH, NODE_PATH_SUFFIX, serverRepoTaken);
     }
 
-    public void setSemaphore(int count){
+    public void setSemaphore(int count) {
         zkWatch.setSemaphore(count);
     }
 
@@ -214,12 +211,12 @@ public class ECS {
         ECSNode node1 = null;
         ECSNode smallerNode;
         ECSNode largerNode;
-        HashMap<String ,IECSNode> map = new HashMap<>();
+        HashMap<String, IECSNode> map = new HashMap<>();
         while (itr1.hasNext() && tmp.size() > 0) {
             smallerNode = null;
             largerNode = null;
             node1 = (ECSNode) itr1.next();
-            for(IECSNode node2 : tmp) {
+            for (IECSNode node2 : tmp) {
                 if (node1.compareTo((ECSNode) node2) <= 0) {
                     largerNode = (ECSNode) node2;
                 } else {
@@ -230,13 +227,13 @@ public class ECS {
                     break;
                 } else if (smallerNode != null && largerNode != null) {
                     map.put(smallerNode.getNodeName(), smallerNode);
-                } else;
+                } else ;
             }
-            if(largerNode == null) {
+            if (largerNode == null) {
                 map.put(smallerNode.getNodeName(), smallerNode);
             }
         }
-        for(IECSNode node : map.values()) {
+        for (IECSNode node : map.values()) {
             sendMetedata(node);
         }
     }

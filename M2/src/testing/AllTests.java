@@ -43,6 +43,7 @@ public class AllTests {
         Suite.addTestSuite(ECSNodeTest.class);
         Suite.addTestSuite(ECSClientTest.class);
         Suite.addTestSuite(CacheTest.class);
+        Suite.addTestSuite(PerformanceTest.class);
 
 
 
