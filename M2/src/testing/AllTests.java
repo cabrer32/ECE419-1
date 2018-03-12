@@ -22,7 +22,7 @@ public class AllTests {
 
             ECSClient ecsClient = new ECSClient("ecs.config");
 
-            ecsClient.addNodes(1, "None", 100);
+            ecsClient.addNodes(2, "None", 100);
 
             ecsClient.start();
 

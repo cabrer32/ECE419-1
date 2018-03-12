@@ -15,7 +15,9 @@ import java.util.*;
 
 public class ECS {
     private static Logger logger = Logger.getRootLogger();
+    //private static final String SCRIPT_TEXT = "ssh -n %s nohup java -jar /m2-server.jar %s %s %s %s %s %s &";
     private static final String SCRIPT_TEXT = "ssh -n %s nohup java -jar m2-server.jar %s %s %s %s %s %s &";
+
 
     private Gson gson;
     private ZooKeeperWatcher zkWatch;

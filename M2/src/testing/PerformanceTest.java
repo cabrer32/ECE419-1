@@ -29,7 +29,7 @@ public class PerformanceTest extends TestCase {
                 ArrayList<KVStore> clients = new ArrayList<>();
 
                 for (int j = 1; j <= i; i++) {
-                    KVStore kvClient = new KVStore("localhost", 50007);
+                    KVStore kvClient = new KVStore("127.0.0.1", 50007);
                     kvClient.connect();
                     clients.add(kvClient);
                 }
