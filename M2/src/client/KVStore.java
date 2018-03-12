@@ -38,6 +38,7 @@ public class KVStore implements KVCommInterface {
 	public KVStore(String address, int port) {
 		// TODO Auto-generated method stub
 		serverList = null;
+		communicationModules = new HashMap<>();
 		firstServerName = "server8";
 		communicationModules.put(firstServerName, new CommunicationModule(address, port));
 		gson = new Gson();
