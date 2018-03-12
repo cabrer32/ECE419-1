@@ -93,6 +93,7 @@ public class ECS {
         zkWatch = new ZooKeeperWatcher();
         zkWatch.createConnection(CONNECTION_ADDR, SESSION_TIMEOUT);
         zkWatch.createPath(ROOT_PATH, "");
+        zkWatch.watchChildren();
     }
 
     public TreeSet<IECSNode> arrangeECSNodes(int count, String cacheStrategy, int cacheSize) {

@@ -50,7 +50,7 @@ public class ZooKeeperWatcher implements Watcher {
             zk = new ZooKeeper(connectAddr, sessionTimeout, this);
             logger.info("Connecting to zookeeper server");
             connectedSemaphore.await();
-            this.zk.getChildren(PARENT_PATH, this);
+
         } catch (Exception e) {
             logger.error("Failed to connect zookeeper server " + e);
         }
@@ -86,6 +86,14 @@ public class ZooKeeperWatcher implements Watcher {
         }
     }
 
+    public void watchChildren(){
+        try{
+            this.zk.getChildren(PARENT_PATH, this);
+        }catch(Exception e ){
+            logger.error("Cannot watch children");
+        }
+
+    }
 
     /**
      * update node
