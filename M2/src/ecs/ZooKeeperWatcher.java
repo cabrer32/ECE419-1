@@ -194,7 +194,7 @@ public class ZooKeeperWatcher implements Watcher {
         logger.info("Deleting all nodes");
 
         try {
-            this.zk.getChildren(PARENT_PATH, false);
+            this.zk.exists(PARENT_PATH, false);
         } catch (Exception e) {
             logger.error("Cannot unwatch children");
         }

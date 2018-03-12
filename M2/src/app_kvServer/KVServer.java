@@ -353,22 +353,25 @@ public class KVServer implements IKVServer {
 
     @Override
     public void start() {
+        logger.info("--Start server ...");
         state = KVServerState.RUNNING;
-        logger.info("Start server ...");
     }
 
     @Override
     public void stop() {
+        logger.info("--Stoping server");
         state = KVServerState.STOPPED;
     }
 
     @Override
     public void lockWrite() {
+        logger.info("--Lock Write");
         state = KVServerState.LOCKED;
     }
 
     @Override
     public void unlockWrite() {
+        logger.info("--Unlock Write");
         state = KVServerState.RUNNING;
     }
 

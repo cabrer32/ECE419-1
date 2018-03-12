@@ -391,10 +391,19 @@ public class KVServerWatcher {
             }
         }
 
-        writeData(ROOT_PATH, gson.toJson(meta, ECSNode.class));
-
+        writeData(ROOT_PATH, metaToJson(meta));
     }
 
+    String metaToJson(ArrayList<ECSNode> meta) {
+        try {
+            Type listType = new TypeToken<ArrayList<ECSNode>>() {
+            }.getType();
+            return gson.toJson(meta, listType);
+        } catch (JsonSyntaxException e) {
+            logger.error("Invalid Message syntax " + e.getMessage());
+        }
+        return null;
+    }
 
     ArrayList<ECSNode> parseJsonObject(String data) {
         try {
