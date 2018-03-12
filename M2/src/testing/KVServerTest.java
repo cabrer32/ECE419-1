@@ -15,7 +15,7 @@ public class KVServerTest extends TestCase {
 
     @Override
     protected void tearDown() {
-        thread.interrupt();
+        kvServer.close();
         System.out.println("Server has been teared down");
     }
 
@@ -24,7 +24,7 @@ public class KVServerTest extends TestCase {
     public void testConstructor() {
         try {
 
-            kvServer = new KVServer("testserver1", "127.0.0.1", 2181);
+            kvServer = new KVServer("testserver1", "", 2181);
             kvServer.initKVServer(40000, 100, "FIFO");
 
             thread = new ServerThread(kvServer);

@@ -127,7 +127,7 @@ public class ZooKeeperWatcher implements Watcher {
     }
 
     /**
-     * 判断指定节点是否存在
+     * Check if the path exists
      */
     public Stat exists(String path, Watcher watch) {
         try {
@@ -178,6 +178,16 @@ public class ZooKeeperWatcher implements Watcher {
             logger.error("Failed to connect to zookeeper server");
         }
 
+    }
+
+    public void clearNode(String path){
+        try {
+            if (zk.exists(path, false) != null){
+                deleteNode(path);
+            }
+        }catch (Exception e){
+            logger.error("cannot clearNode");
+        }
     }
 
     public void setSemaphore(int count) {

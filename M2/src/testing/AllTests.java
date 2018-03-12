@@ -14,13 +14,22 @@ import logger.LogSetup;
 
 public class AllTests {
 
+
+
     static {
         try {
             new LogSetup("logs/testing/test.log", Level.ALL);
 
+            ECSClient ecsClient = new ECSClient("ecs.config");
+
+            ecsClient.addNodes(1, "None", 100);
+
+            ecsClient.start();
 
         } catch (IOException e) {
             System.out.println("Cannot initilize logger");
+        }finally {
+            System.out.println("final");
         }
     }
 
@@ -28,12 +37,20 @@ public class AllTests {
     public static Test suite() {
         TestSuite Suite = new TestSuite("Basic Storage ServerTest-Suite");
 
-        Suite.addTestSuite(KVServerTest.class);
+        Suite.addTestSuite(ConnectionTest.class);
         Suite.addTestSuite(KVStoreTest.class);
+        Suite.addTestSuite(KVServerTest.class);
         Suite.addTestSuite(ECSNodeTest.class);
         Suite.addTestSuite(ECSClientTest.class);
+        Suite.addTestSuite(CacheTest.class);
+
+
 
         return Suite;
     }
+
+
+
+
 
 }

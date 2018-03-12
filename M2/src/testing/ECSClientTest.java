@@ -34,9 +34,9 @@ public class ECSClientTest extends TestCase {
         try {
             boolean s = false;
             /** test add nodes */
-            Collection<IECSNode> nodes = ecsClient.addNodes(4, "LFU", 50);
+            Collection<IECSNode> nodes = ecsClient.addNodes(1, "LFU", 50);
 
-            if (nodes == null || nodes.size() != 4)
+            if (nodes == null || nodes.size() != 1)
                 assertTrue(false);
 
 
@@ -55,14 +55,12 @@ public class ECSClientTest extends TestCase {
 
 
             /** test get nodes */
-            IECSNode node = ecsClient.getNodeByKey("0");
+            IECSNode node = ecsClient.getNodeByKey("00000000000000000000000000000000");
 
-            if(node == null)
-                assertTrue(false);
-
+            assertTrue(node == null);
 
 
-        }catch (Exception e ){
+        } catch (Exception e) {
             System.out.println("Error happening " + e);
             e.printStackTrace();
         }

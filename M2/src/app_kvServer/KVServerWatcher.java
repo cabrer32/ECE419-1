@@ -15,6 +15,7 @@ import org.apache.zookeeper.data.Stat;
 import java.lang.reflect.Type;
 import java.util.*;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
@@ -318,7 +319,7 @@ public class KVServerWatcher {
             zk = new ZooKeeper(zkAddress, SESSION_TIMEOUT, connectionWatcher);
             logger.info("Connecting to zookeeper server");
 
-            connectedSemaphore.await();
+            connectedSemaphore.await(10000, TimeUnit.MILLISECONDS);
 
             createPath(childPath, "", childrenWatcher);
 

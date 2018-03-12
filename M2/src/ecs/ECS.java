@@ -15,8 +15,8 @@ import java.util.*;
 
 public class ECS {
     private static Logger logger = Logger.getRootLogger();
-//    private static final String SCRIPT_TEXT = "ssh -n %s nohup java -jar /Users/wuqili/Desktop/ECE419/M2/m2-server.jar %s %s %s %s %s %s &";
-    private static final String SCRIPT_TEXT = "ssh -n %s nohup java -jar /Users/pannnnn/UTcourses/ECE419/ece419/M2/m2-server.jar %s %s %s %s %s %s &";
+    private static final String SCRIPT_TEXT = "ssh -n %s nohup java -jar /Users/wuqili/Desktop/ECE419/M2/m2-server.jar %s %s %s %s %s %s &";
+//    private static final String SCRIPT_TEXT = "ssh -n %s nohup java -jar /Users/pannnnn/UTcourses/ECE419/ece419/M2/m2-server.jar %s %s %s %s %s %s &";
 
     private Gson gson;
     private ZooKeeperWatcher zkWatch;
@@ -136,6 +136,8 @@ public class ECS {
     }
 
     public void executeScript(ECSNode node) {
+        zkWatch.clearNode(NODE_PATH_SUFFIX + node.getNodeName());
+
         String script = String.format(SCRIPT_TEXT, LOCAL_HOST, node.getNodeName(),CONNECTION_ADDR_HOST,
                 CONNECTION_ADDR_PORT, node.getNodePort(), node.getCacheStrategy(), node.getCachesize());
         Process proc;
@@ -170,6 +172,8 @@ public class ECS {
         }
         return ifSuccess;
     }
+
+
 
     public boolean awaitNodes(int timeout) {
         return zkWatch.awaitNodes(timeout);
