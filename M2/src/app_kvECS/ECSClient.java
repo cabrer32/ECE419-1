@@ -93,9 +93,11 @@ public class ECSClient implements IECSClient {
                 logger.error(e.getMessage());
             }
 
-            if(running)
-                for(IECSNode node : serversTaken)
+            if(running) {
+                for (IECSNode node : serversTaken) {
                     ecs.sendMetedata(node);
+                }
+            }
 
             ecs.notifyPrecessor(serversTaken);
 
@@ -139,7 +141,7 @@ public class ECSClient implements IECSClient {
     public IECSNode getNodeByKey(String Key) {
         TreeSet<IECSNode> allRunningNodes = ecs.getNodes();
         for (IECSNode node : allRunningNodes) {
-            if (node.getNodeName() == Key) {
+            if (((ECSNode)node).contains(Key)) {
                 return node;
             }
         }
