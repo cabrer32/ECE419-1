@@ -84,7 +84,7 @@ public class ECSNode implements IECSNode, Comparable<ECSNode>{
     }
 
     public boolean contains(String hashValue) {
-        if ((hashValue.compareTo(startingHashValue) >= 0) && (hashValue.compareTo(endingHashValue) < 0)) {
+        if ((hashValue.compareTo(startingHashValue) >= 0) && (hashValue.compareTo(endingHashValue) <= 0)) {
             return true;
         }
         return false;

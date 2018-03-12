@@ -79,11 +79,13 @@ public class ECSClient implements IECSClient {
         Collection<IECSNode> serversTaken = this.setupNodes(count, cacheStrategy, cacheSize);
 
         if (serversTaken != null) {
-            ecs.setSemaphore(count);
+
 
             for (Iterator<IECSNode> iterator = serversTaken.iterator(); iterator.hasNext(); ) {
                 ecs.executeScript((ECSNode) iterator.next());
             }
+
+            ecs.setSemaphore(count);
 
             try {
 

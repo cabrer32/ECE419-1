@@ -2,6 +2,7 @@ package testing;
 
 import app_kvServer.KVServer;
 import client.KVStore;
+import common.messages.KVMessage;
 import common.module.ServerThread;
 import junit.framework.TestCase;
 import org.apache.log4j.Level;
@@ -9,49 +10,129 @@ import org.junit.Test;
 
 public class KVStoreTest extends TestCase {
 
-    private KVServer kvServer = null;
-    private ServerThread thread = null;
+
+    KVServer server = null;
+    ServerThread serverThread = null;
+
 
     private KVStore kvClient;
 
-    @Override
+
     public void setUp() {
-
+        kvClient = new KVStore("127.0.0.1", 50007);
         try {
-
-            kvServer = new KVServer("testserver2", "127.0.0.1", 2181);
-            kvServer.initKVServer(40001, 100, "FIFO");
-
-            thread = new ServerThread(kvServer);
-            thread.start();
-
+            kvClient.connect();
         } catch (Exception e) {
-            assertTrue(false);
-            System.out.println("Cannot initialize Server");
         }
     }
-
 
 
     @Test
-    public void testKVStoreConnection() {
+    public void testPut() {
+        String key = "foo2";
+        String value = "bar2";
+        KVMessage response = null;
+        Exception ex = null;
+
         try {
-
-            kvClient = new KVStore("127.0.0.1", 40001);
-            kvClient.connect();
-
+            response = kvClient.put(key, value);
         } catch (Exception e) {
-
-            System.out.println("Error happend while connecting server " + e);
+            ex = e;
         }
+
+        assertTrue(ex == null && response.getStatus() == KVMessage.StatusType.PUT_SUCCESS);
     }
 
-    @Override
-    protected void tearDown() {
-        thread.interrupt();
-        kvServer.close();
+    @Test
+    public void testPutDisconnected() {
+        kvClient.disconnect();
+        String key = "foo";
+        String value = "bar";
+        Exception ex = null;
 
-        System.out.println("Server has been teared down");
+        try {
+            kvClient.put(key, value);
+        } catch (Exception e) {
+            ex = e;
+        }
+
+        assertNotNull(ex);
+    }
+
+    @Test
+    public void testUpdate() {
+
+        String key = "updateTestValue";
+        String initialValue = "initial";
+        String updatedValue = "updated";
+
+        KVMessage response = null;
+        Exception ex = null;
+
+        try {
+            kvClient.put(key, initialValue);
+            response = kvClient.put(key, updatedValue);
+
+        } catch (Exception e) {
+            ex = e;
+        }
+
+        assertTrue(ex == null && response.getStatus() == KVMessage.StatusType.PUT_UPDATE
+                && response.getValue().equals(updatedValue));
+    }
+
+    @Test
+    public void testDelete() {
+        String key = "deleteTestValue";
+        String value = "toDelete";
+
+        KVMessage response = null;
+        Exception ex = null;
+
+        try {
+            kvClient.put(key, value);
+
+            response = kvClient.put(key, "");
+
+        } catch (Exception e) {
+            ex = e;
+        }
+
+        assertTrue(ex == null && response.getStatus() == KVMessage.StatusType.DELETE_SUCCESS);
+    }
+
+    @Test
+    public void testGet() {
+        server = new KVServer("test", "", 0);
+        String key = "foo";
+        String value = "bar";
+        KVMessage response = null;
+        Exception ex = null;
+
+        try {
+            kvClient.put(key, value);
+            response = kvClient.get(key);
+        } catch (Exception e) {
+            ex = e;
+        }
+
+        assertTrue(ex == null && response.getValue().equals("bar"));
+    }
+
+    @Test
+    public void testGetUnsetValue() {
+
+        String key = "an unset value";
+        KVMessage response = null;
+        Exception ex = null;
+
+        try {
+            response = kvClient.get(key);
+        } catch (Exception e) {
+            ex = e;
+        }
+
+        assertTrue(ex == null && response.getStatus() == KVMessage.StatusType.GET_ERROR);
     }
 
 

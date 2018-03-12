@@ -86,6 +86,12 @@ public class KVServer implements IKVServer {
 
     }
 
+    public void initZK(){
+        //Initialize server watch
+        this.zkWatch = new KVServerWatcher(logger, this, this.zkHostname + ":" + this.zkPort, this.name);
+        this.zkWatch.init();
+    }
+
     public void initKVServer(int port, int cacheSize, String Strategy) {
         logger.info("Initialize server ...");
 
@@ -140,9 +146,6 @@ public class KVServer implements IKVServer {
         }
 
 
-        //Initialize server watch
-        this.zkWatch = new KVServerWatcher(logger, this, this.zkHostname + ":" + this.zkPort, this.name);
-        this.zkWatch.init();
 
         running = true;
     }
@@ -413,6 +416,8 @@ public class KVServer implements IKVServer {
                 KVServer server = new KVServer(args[0], args[1], Integer.parseInt(args[2]));
 
                 server.initKVServer(Integer.parseInt(args[3]), Integer.parseInt(args[5]), args[4]);
+
+                server.initZK();
 
                 new ServerThread(server).start();
 
