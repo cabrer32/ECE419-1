@@ -15,8 +15,8 @@ import java.util.*;
 
 public class ECS {
     private static Logger logger = Logger.getRootLogger();
-    private static final String SCRIPT_TEXT = "ssh -n %s nohup java -jar /Users/wuqili/Desktop/ECE419/M2/m2-server.jar %s %s %s %s %s %s &";
-//    private static final String SCRIPT_TEXT = "ssh -n %s nohup java -jar /Users/pannnnn/UTcourses/ECE419/ece419/M2/m2-server.jar %s %s %s %s %s %s &";
+//    private static final String SCRIPT_TEXT = "ssh -n %s nohup java -jar /Users/wuqili/Desktop/ECE419/M2/m2-server.jar %s %s %s %s %s %s &";
+    private static final String SCRIPT_TEXT = "ssh -n %s nohup java -jar /Users/pannnnn/UTcourses/ECE419/ece419/M2/m2-server.jar %s %s %s %s %s %s &";
 
     private Gson gson;
     private ZooKeeperWatcher zkWatch;
@@ -68,17 +68,17 @@ public class ECS {
                 serverRepo.add(node);
                 this.serverRepoMapping.put(node, 1);
             }
-            serverRepo.last().setEndingHashValue(serverRepo.first().getStartingHashValue());
-            Iterator itr = serverRepo.iterator();
-            ECSNode currentNode, nextNode;
-            if (itr.hasNext()) {
-                currentNode = (ECSNode) itr.next();
-                while (itr.hasNext()) {
-                    nextNode = (ECSNode) itr.next();
-                    currentNode.setEndingHashValue(nextNode.getStartingHashValue());
-                    currentNode = nextNode;
-                }
-            }
+//            serverRepo.last().setEndingHashValue(serverRepo.first().getStartingHashValue());
+//            Iterator itr = serverRepo.iterator();
+//            ECSNode currentNode, nextNode;
+//            if (itr.hasNext()) {
+//                currentNode = (ECSNode) itr.next();
+//                while (itr.hasNext()) {
+//                    nextNode = (ECSNode) itr.next();
+//                    currentNode.setEndingHashValue(nextNode.getStartingHashValue());
+//                    currentNode = nextNode;
+//                }
+//            }
             this.serverRepo = (TreeSet<IECSNode>) serverRepo.clone();
             initZookeeper();
         } catch (FileNotFoundException e) {
@@ -119,6 +119,17 @@ public class ECS {
                 if (i == count) {
                     break;
                 }
+            }
+        }
+        ((ECSNode) serversTaken.last()).setEndingHashValue(((ECSNode) serversTaken.first()).getStartingHashValue());
+        Iterator itr = serversTaken.iterator();
+        ECSNode currentNode, nextNode;
+        if (itr.hasNext()) {
+            currentNode = (ECSNode) itr.next();
+            while (itr.hasNext()) {
+                nextNode = (ECSNode) itr.next();
+                currentNode.setEndingHashValue(nextNode.getStartingHashValue());
+                currentNode = nextNode;
             }
         }
         return serversTaken;

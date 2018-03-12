@@ -21,6 +21,7 @@ public class KVStore implements KVCommInterface {
 	private Logger logger = Logger.getRootLogger();
 	private static final String STARTING_HASH_VALUE = "00000000000000000000000000000000";
 	private static final String ENDING_HASH_VALUE = "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF";
+	private static final int MAX_RETRY = 5;
 	private Set<ClientSocketListener> listeners;
 	private boolean running;
 //	private CommunicationModule communicationModule;
@@ -108,6 +109,7 @@ public class KVStore implements KVCommInterface {
 		// TODO Auto-generated method stub
 		KVMessage msgReq = null;
 		KVMessage msgRes = null;
+		int retryCount = 0;
 		while(true) {
 			if (serverList == null) {
 				CommunicationModule ci = communicationModules.get(firstServerName);
@@ -151,6 +153,7 @@ public class KVStore implements KVCommInterface {
 					break;
 				}
 			}
+			if (retryCount++ == MAX_RETRY) break;
 		}
 		return msgRes;
 	}
@@ -160,6 +163,7 @@ public class KVStore implements KVCommInterface {
 		// TODO Auto-generated method stub
 		KVMessage msgReq = null;
 		KVMessage msgRes = null;
+		int retryCount = 0;
 		while(true) {
 			if (serverList == null) {
 				CommunicationModule ci = communicationModules.get(firstServerName);
@@ -201,6 +205,7 @@ public class KVStore implements KVCommInterface {
 					break;
 				}
 			}
+			if (retryCount++ == MAX_RETRY) break;
 		}
 		return msgRes;
 	}
