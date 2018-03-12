@@ -121,6 +121,9 @@ public class ECS {
                 }
             }
         }
+        String start = ((ECSNode) serversTaken.last()).getStartingHashValue();
+        String end = ((ECSNode) serversTaken.first()).getStartingHashValue();
+        
         ((ECSNode) serversTaken.last()).setEndingHashValue(((ECSNode) serversTaken.first()).getStartingHashValue());
         Iterator itr = serversTaken.iterator();
         ECSNode currentNode, nextNode;
