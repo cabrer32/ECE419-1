@@ -1,6 +1,7 @@
 package ecs;
 
 import com.google.gson.Gson;
+import com.jcraft.jsch.HASH;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 
@@ -15,7 +16,7 @@ import java.util.*;
 public class ECS {
     private static Logger logger = Logger.getRootLogger();
 //    private static final String SCRIPT_TEXT = "ssh -n %s nohup java -jar /Users/wuqili/Desktop/ECE419/M2/m2-server.jar %s %s %s %s %s %s &";
-    private static final String SCRIPT_TEXT = "ssh -n %s nohup java -jar /Users/wuqili/Desktop/ECE419/M2/m2-server.jar %s %s %s %s %s %s &";
+    private static final String SCRIPT_TEXT = "ssh -n %s nohup java -jar /Users/pannnnn/UTcourses/ECE419/ece419/M2/m2-server.jar %s %s %s %s %s %s &";
 
     private Gson gson;
     private ZooKeeperWatcher zkWatch;
@@ -196,6 +197,7 @@ public class ECS {
         ECSNode node1 = null;
         ECSNode smallerNode;
         ECSNode largerNode;
+        HashMap<String ,IECSNode> map = new HashMap<>();
         while (itr1.hasNext() && tmp.size() > 0) {
             smallerNode = null;
             largerNode = null;
@@ -207,15 +209,18 @@ public class ECS {
                     smallerNode = (ECSNode) node2;
                 }
                 if (smallerNode == null && largerNode != null) {
-                    sendMetedata(tmp.last());
+                    map.put(tmp.last().getNodeName(), tmp.last());
                     break;
                 } else if (smallerNode != null && largerNode != null) {
-                    sendMetedata(smallerNode);
+                    map.put(smallerNode.getNodeName(), smallerNode);
                 } else;
             }
             if(largerNode == null) {
-                sendMetedata(smallerNode);
+                map.put(smallerNode.getNodeName(), smallerNode);
             }
+        }
+        for(IECSNode node : map.values()) {
+            sendMetedata(node);
         }
     }
 }
