@@ -1,7 +1,6 @@
 package ecs;
 
 import com.google.gson.Gson;
-import com.jcraft.jsch.HASH;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 
