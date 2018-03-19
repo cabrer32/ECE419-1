@@ -64,7 +64,7 @@ public class MetaData implements IMetaData {
     }
 
     @Override
-    public IECSNode getCoordinator(String name) {
+    public String getCoordinator(String name) {
         return null;
     }
 

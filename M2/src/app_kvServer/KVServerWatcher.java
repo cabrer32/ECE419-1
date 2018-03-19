@@ -3,6 +3,7 @@ package app_kvServer;
 
 import common.messages.MetaData;
 import ecs.ECSNode;
+import ecs.IECSNode;
 import org.apache.log4j.Level;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.WatchedEvent;
@@ -63,6 +64,11 @@ public class KVServerWatcher {
      * Watcher to get transfer data
      */
     private Watcher dataWatcher = null;
+
+    /**
+     * Watcher to get transfer data
+     */
+    private Watcher transferWatcher = null;
 
     /**
      * kvserver for callback
@@ -316,6 +322,43 @@ public class KVServerWatcher {
             }
         };
 
+        transferWatcher = new Watcher() {
+            @Override
+            public void process(WatchedEvent event) {
+                if (event == null) return;
+
+
+                KeeperState keeperState = event.getState();
+
+                EventType eventType = event.getType();
+
+                logger.info("Transfer watcher triggered " + event.toString());
+
+                if (keeperState == KeeperState.SyncConnected) {
+                    switch (eventType) {
+                        case NodeDataChanged:
+
+                            logger.info("Node is changed.");
+                            String data = readData(dataPath, null);
+
+                            if(!data.equals("")){
+                                logger.info("Change is not related");
+                                return;
+                            }
+
+                            dataSemaphore.countDown();
+                            break;
+                        default:
+                            logger.info("Change is not related");
+                            break;
+                    }
+                } else {
+                    logger.warn("Failed to connect with zookeeper server -> data node");
+                }
+
+            }
+        };
+
         try {
             zk = new ZooKeeper(zkAddress, SESSION_TIMEOUT, connectionWatcher);
             logger.info("Connecting to zookeeper server");
@@ -336,22 +379,82 @@ public class KVServerWatcher {
 
         if(!meta.hasServer(KVname)){
             //remove itself
+
+            //transfer data
             MetaData oldMeta = kvServer.getMetaData();
 
             String successor = oldMeta.getSuccessor(KVname);
 
             while(!meta.hasServer(successor))
-                successor = oldMeta.getSuccessor(successor.getNodeName());
+                successor = oldMeta.getSuccessor(successor);
 
+            try{
+                kvServer.moveData(oldMeta.getHashRange(KVname), successor);
+            } catch(Exception e) {
+                logger.error("Cannot move data to "+ successor + " " + e);
+            }
 
+            writeData(signalPath,"");
+
+            kvServer.close();
 
         }
         else{
             //transfer data to someone else
+
+            if(meta.isCoordinator(KVname)){
+                MetaData oldMeta = kvServer.getMetaData();
+
+                IECSNode[] targets = meta.getServerBetween(oldMeta.getSuccessor(KVname), KVname);
+
+                for(IECSNode node:targets){
+
+                    try{
+                        kvServer.moveData(node.getNodeHashRange(), node.getNodeName());
+                    } catch(Exception e) {
+                        logger.error("Cannot move data to "+ node.getNodeName() + " " + e);
+                    }
+
+                }
+
+                writeData(signalPath,"");
+
+            }else{
+                String coordinator = meta.getCoordinator(KVname);
+
+                try{
+                    kvServer.moveData(meta.getHashRange(KVname), coordinator);
+                } catch(Exception e) {
+                    logger.error("Cannot move data to "+ coordinator + " " + e);
+                }
+
+                writeData(signalPath, "");
+
+            }
         }
 
     }
 
+
+
+
+    void moveData(Map.Entry<String, String> kv, String targetName) {
+        String dest = ROOT_PATH + "/" + targetName + "/data";
+
+        logger.info("Sending key => " + kv.getKey() + " to " + targetName);
+
+        dataSemaphore = new CountDownLatch(1);
+
+        writeData(dest, entryToJson(kv));
+        exists(dest, transferWatcher);
+
+        try {
+            dataSemaphore.await();
+        } catch (Exception e) {
+            logger.error("Cannot send data ");
+        }
+
+    }
 
     Map.Entry<String, String> parseJsonEntry(String data) {
         Type Type = new TypeToken<Map.Entry<String, String>>() {
@@ -365,24 +468,5 @@ public class KVServerWatcher {
         }.getType();
 
         return gson.toJson(kv, Type);
-    }
-
-    void moveData(String key, String value, String targetName) {
-        String dest = ROOT_PATH + "/" + targetName + "/data";
-
-        logger.info("Sending key => " + key + " to " + targetName);
-
-        dataSemaphore = new CountDownLatch(1);
-
-        Map.Entry<String, String> kv = new AbstractMap.SimpleEntry<String, String>(key, value);
-
-        writeData(dest, entryToJson(kv));
-        exists(dest, dataWatcher);
-
-        try {
-            dataSemaphore.await();
-        } catch (Exception e) {
-            logger.error("Cannot send data ");
-        }
     }
 }
