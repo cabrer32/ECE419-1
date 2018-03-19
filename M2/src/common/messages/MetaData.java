@@ -239,6 +239,11 @@ public class MetaData implements IMetaData {
         return null;
     }
 
+    @Override
+    public IECSNode removeNode(String name) {
+        return null;
+    }
+
 
     public static String MetaToJson(MetaData meta) {
         try {

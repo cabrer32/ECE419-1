@@ -1,6 +1,5 @@
 package ecs;
 
-import common.messages.MetaData;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
@@ -11,8 +10,6 @@ import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.data.Stat;
 import org.apache.log4j.Logger;
 
-import java.rmi.server.ExportException;
-import java.util.List;
 import java.util.TreeSet;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -134,61 +131,6 @@ public class ECSWatcher {
     }
 
 
-
-
-
-    public void createConnection(String connectAddr, int sessionTimeout) {
-        this.releaseConnection();
-        try {
-            connectedSemaphore = new CountDownLatch(1);
-            zk = new ZooKeeper(connectAddr, sessionTimeout, this);
-            logger.info("Connecting to zookeeper server");
-            connectedSemaphore.await();
-
-        } catch (Exception e) {
-            logger.error("Failed to connect zookeeper server " + e);
-        }
-    }
-
-    /**
-     * Close Zookeeper connection
-     */
-    public void releaseConnection() {
-        if (this.zk != null) {
-            try {
-                this.zk.close();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
-    }
-
-    /**
-     * Create node with path
-     */
-
-    public void createPath(String path, String data) {
-        try {
-            logger.info("Creating node at " + path);
-            Stat stat = this.zk.exists(path, this);
-            if (stat == null) {
-                this.zk.create(path, data.getBytes(), Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
-            }
-        } catch (Exception e) {
-            logger.error("Failed to create new node " + path);
-            logger.error(e);
-        }
-    }
-
-    public void watchChildren(){
-        try{
-            this.zk.getChildren(PARENT_PATH, this);
-        }catch(Exception e ){
-            logger.error("Cannot watch children");
-        }
-
-    }
-
     /**
      * update node
      */
@@ -232,57 +174,14 @@ public class ECSWatcher {
         }
     }
 
-    /**
-     * get watch event
-     */
-    @Override
-    public void process(WatchedEvent event) {
-
-        if (event == null) {
-            return;
-        }
-
-        KeeperState keeperState = event.getState();
-        EventType eventType = event.getType();
-
-
-        logger.info("watch event is triggered " + event.toString());
-
-        if (KeeperState.SyncConnected == keeperState) {
-
-            if (EventType.None == eventType) {
-                logger.info("Successfully connected to zookeeper");
-                connectedSemaphore.countDown();
-                exists(PARENT_PATH, this);
-            }
-
-            if (EventType.NodeChildrenChanged == eventType) {
-                logger.info("Change has been observed in children");
-                connectedSemaphore.countDown();
-                try {
-                    this.zk.getChildren(PARENT_PATH, this);
-                } catch (Exception e) {
-                    logger.error("cannot watch on children nodes");
-                }
-            }
-        } else {
-            logger.error("Failed to connect to zookeeper server");
-        }
-
-    }
-
-    public void clearNode(String path){
-        try {
-            if (zk.exists(path, false) != null){
-                deleteNode(path);
-            }
-        }catch (Exception e){
-            logger.error("cannot clearNode");
-        }
-    }
 
     public void setSemaphore(int count) {
-        connectedSemaphore = new CountDownLatch(count);
+        try {
+            zk.getChildren(ROOT_PATH, rootWatcher);
+            connectedSemaphore = new CountDownLatch(count);
+        }catch (Exception e){
+            logger.error("Cannot watch children");
+        }
     }
 
     public boolean awaitNodes(int timeout) {
@@ -298,20 +197,21 @@ public class ECSWatcher {
         return ifNotTimeout;
     }
 
-    public boolean deleteAllNodes(String rootPath, String nodePathSuffix, TreeSet<IECSNode> serverRepoTaken) {
+    public boolean deleteAllNodes(TreeSet<IECSNode> serverRepoTaken) {
         boolean ifAllSuccess = true;
         logger.info("Deleting all nodes");
 
         try {
-            this.zk.exists(PARENT_PATH, false);
+            this.zk.exists(ROOT_PATH, false);
         } catch (Exception e) {
             logger.error("Cannot unwatch children");
         }
 
         for (IECSNode node : serverRepoTaken) {
-            ifAllSuccess = ifAllSuccess && this.deleteNode(nodePathSuffix + node.getNodeName());
+            ifAllSuccess = ifAllSuccess && this.deleteNode(CHILDREN_PATH + node.getNodeName());
         }
-        ifAllSuccess = ifAllSuccess && this.deleteNode(rootPath);
+
+        ifAllSuccess = ifAllSuccess && this.deleteNode(ROOT_PATH);
         return ifAllSuccess;
     }
 }

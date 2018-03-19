@@ -18,20 +18,14 @@ public class ECS {
     //private static final String SCRIPT_TEXT = "ssh -n %s nohup java -jar /m2-server.jar %s %s %s %s %s %s &";
     private static final String SCRIPT_TEXT = "ssh -n %s nohup java -jar m2-server.jar %s %s %s %s %s %s &";
 
-    private Gson gson;
     private ECSWatcher zkWatch;
-
 
     private MetaData meta;
     private TreeSet<IECSNode> avaServer = new TreeSet<>();
     private TreeSet<IECSNode> avaRepica = new TreeSet<>();
 
 
-
-    // Zookeeper specific
-    private static final int SESSION_TIMEOUT = 10000;
     private static final String LOCAL_HOST = "127.0.0.1";
-    private static final String CONNECTION_ADDR = "127.0.0.1:2181";
     private static final String CONNECTION_ADDR_HOST = "127.0.0.1";
     private static final String CONNECTION_ADDR_PORT = "2181";
     private static final String ROOT_PATH = "/ecs";
@@ -99,44 +93,6 @@ public class ECS {
         return list;
     }
 
-
-
-
-
-
-
-
-
-
-
-    private TreeSet<IECSNode> arrangeECSNodes(int count, String cacheStrategy, int cacheSize) {
-        TreeSet<IECSNode> serverTaken = new TreeSet<>();
-        int availableNodes = 0;
-        for (Integer i : serverRepoMapping.values()) {
-            availableNodes += i;
-        }
-        if (availableNodes < count) {
-            return serverTaken;
-        } else {
-            int i = 0;
-            for (IECSNode node : serverRepo) {
-                if (serverRepoMapping.get(node) == 1) {
-                    ((ECSNode) node).setCacheStrategy(cacheStrategy);
-                    ((ECSNode) node).setCachesize(cacheSize);
-                    serverTaken.add(node);
-                    serverRepoTaken.add(node);
-                    serverRepoMapping.put(node, 0);
-                    i = i + 1;
-                }
-                if (i == count) {
-                    break;
-                }
-            }
-        }
-        return serverTaken;
-    }
-
-
     public void startAllNodes() {
         zkWatch.writeData(ROOT_PATH, MetaData.MetaToJson(meta));
     }
@@ -167,11 +123,12 @@ public class ECS {
     }
 
     public void addMeta(TreeSet<IECSNode> list){
-            meta = new MetaData(meta.getServerRepo().addAll(list);
+        meta.getServerRepo().addAll(list);
+        meta = new MetaData(meta.getServerRepo());
     }
 
     public boolean removeNodes(Collection<String> nodeNames) {
-        
+
         for (String nodeName : nodeNames) {
             String coordinator = meta.getCoordinator(nodeName);
             ArrayList<String> replica = meta.getReplica(nodeName);
@@ -195,11 +152,17 @@ public class ECS {
     }
 
     public boolean shutdown() {
-        return zkWatch.deleteAllNodes(ROOT_PATH, NODE_PATH_SUFFIX, serverRepoTaken);
+        return zkWatch.deleteAllNodes(meta.getServerRepo());
     }
 
     public TreeSet<IECSNode> getNodes() {
-        return metaData.getServerRepo();
+        return meta.getServerRepo();
+    }
+
+    public void notifyNodes (Collection<String> list){
+        for(String name : list){
+            zkWatch.writeData(NODE_PATH_SUFFIX + name,MetaData.MetaToJson(meta));
+        }
     }
 
     public void notifySuccessor(TreeSet <IECSNode> serversTaken) {
@@ -215,16 +178,7 @@ public class ECS {
 
             list.add(successor);
         }
+        notifyNodes(list);
 
-
-        for(String name : list){
-            zkWatch.writeData(NODE_PATH_SUFFIX + name,MetaData.MetaToJson(meta));
-        }
-    }
-
-    public Collection<IECSNode> setupNodes(int count, String cacheStrategy, int cacheSize) {
-        TreeSet<IECSNode> nodes = arrangeECSNodes(count, cacheStrategy, cacheSize);
-        setHashRange();
-        return nodes;
     }
 }

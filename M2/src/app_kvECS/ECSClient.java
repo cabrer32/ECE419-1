@@ -112,8 +112,9 @@ public class ECSClient implements IECSClient {
 
     @Override
     public boolean removeNodes(Collection<String> nodeNames) {
-        // TODO
-        return ecs.removeNodes(nodeNames);
+        ecs.removeNodes(nodeNames);
+        ecs.notifyNodes(nodeNames);
+        return true;
     }
 
     @Override

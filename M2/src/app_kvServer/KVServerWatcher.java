@@ -15,7 +15,6 @@ import org.apache.zookeeper.data.Stat;
 import java.lang.reflect.Type;
 import java.util.*;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
@@ -402,7 +401,7 @@ public class KVServerWatcher {
             if(meta.isCoordinator(KVname)){
                 MetaData oldMeta = kvServer.getMetaData();
 
-                IECSNode[] targets = meta.getServerBetween(oldMeta.getSuccessor(KVname), KVname);
+                ArrayList<IECSNode> targets = meta.getServerBetween(oldMeta.getSuccessor(KVname), KVname);
 
                 for(IECSNode node:targets){
 
