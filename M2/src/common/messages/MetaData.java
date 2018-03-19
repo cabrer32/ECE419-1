@@ -131,13 +131,13 @@ public class MetaData implements IMetaData {
     @Override
     public IECSNode getPredecessor(String name) {
         Iterator itr = serverRepoTaken.iterator();
-        ECSNode preveNode, nextNode;
+        ECSNode prevNode, curNode;
         while (itr.hasNext()) {
-            preveNode = (ECSNode) itr.next();
+            prevNode = (ECSNode) itr.next();
             if (itr.hasNext()) {
-                nextNode = (ECSNode) itr.next();
-                if (nextNode.getNodeName().equals(name)) {
-                    return preveNode;
+                curNode = (ECSNode) itr.next();
+                if (curNode.getNodeName().equals(name)) {
+                    return prevNode;
                 }
             }
         }
@@ -147,13 +147,14 @@ public class MetaData implements IMetaData {
     @Override
     public IECSNode getSuccessor(String name) {
         Iterator itr = serverRepoTaken.iterator();
-        ECSNode currentNode, nextNode;
+        ECSNode node;
         while (itr.hasNext()) {
-            currentNode = (ECSNode) itr.next();
-            if (itr.hasNext()) {
-                nextNode = (ECSNode) itr.next();
-                if (nextNode.getNodeName().equals(name)) {
-                    return currentNode;
+            node = (ECSNode) itr.next();
+            if (node.getNodeName().equals(name)){
+                if (itr.hasNext()) {
+                    return (ECSNode) itr.next();
+                } else {
+                    break;
                 }
             }
         }
