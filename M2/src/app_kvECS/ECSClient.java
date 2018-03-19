@@ -20,13 +20,10 @@ public class ECSClient implements IECSClient {
     private boolean stop = false;
     private boolean running = false;
     private ECS ecs = null;
-    private String configFileName;
-    private CountDownLatch semaphore;
-    Collection<ECSNode> serversTaken;
 
-    public ECSClient(String configFileName) {
-        this.configFileName = configFileName;
-        ecs = new ECS(configFileName);
+
+    public ECSClient(String configFileName, String repicaFileName) {
+        ecs = new ECS(configFileName,repicaFileName);
     }
 
     @Override
@@ -75,24 +72,20 @@ public class ECSClient implements IECSClient {
     @Override
     public Collection<IECSNode> addNodes(int count, String cacheStrategy, int cacheSize) {
         // TODO
-        Collection<IECSNode> serversTaken = this.setupNodes(count, cacheStrategy, cacheSize);
+        Collection<IECSNode> serversTaken = ecs.getAvaliableServers(count, cacheStrategy, cacheSize);
 
         if (serversTaken != null) {
 
-
-            for (Iterator<IECSNode> iterator = serversTaken.iterator(); iterator.hasNext(); ) {
-                ecs.executeScript((ECSNode) iterator.next());
-            }
-
-            ecs.setSemaphore(count);
+            ecs.initServers((TreeSet<IECSNode>) serversTaken);
 
             try {
-
                 this.awaitNodes(count, AWAIT_TIEMOUT);
 
             } catch (Exception e) {
                 logger.error(e.getMessage());
             }
+
+            ecs.addMeta((TreeSet<IECSNode>) serversTaken);
 
             if(running) {
                 for (IECSNode node : serversTaken) {

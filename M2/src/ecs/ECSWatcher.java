@@ -1,5 +1,6 @@
 package ecs;
 
+import common.messages.MetaData;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
@@ -17,13 +18,17 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 
-public class ZooKeeperWatcher implements Watcher {
+public class ECSWatcher {
 
     /**
      * zookeeper
      */
     private ZooKeeper zk = null;
-    private static final String PARENT_PATH = "/ecs";
+
+    private static final String ROOT_PATH = "/ecs";
+
+    private static final String CONNECTION_ADDR = "127.0.0.1:2181";
+    private static final int SESSION_TIMEOUT = 5000;
     /**
      * zk children path
      */
@@ -31,18 +36,107 @@ public class ZooKeeperWatcher implements Watcher {
     /**
      * signal to complete zookeeper creation
      */
-    private CountDownLatch connectedSemaphore;
+    private CountDownLatch connectedSemaphore = new CountDownLatch(1);;
+
+    /**
+     * signal to complete zookeeper creation
+     */
+    private CountDownLatch awaitSemaphore;
     /**
      * logger
      */
     private static Logger logger = Logger.getRootLogger();
 
+
+    /** root watcher*/
+    private Watcher rootWatcher = null;
+
+
+
+    public void init() {
+        rootWatcher = new Watcher() {
+            @Override
+            public void process(WatchedEvent event) {
+                if (event == null) return;
+
+
+                KeeperState keeperState = event.getState();
+
+                EventType eventType = event.getType();
+
+                logger.info("ROOT watcher triggered " + event.toString());
+
+                if (keeperState == KeeperState.SyncConnected) {
+                    switch (eventType) {
+                        case None:
+                            connectedSemaphore.countDown();
+                            logger.info("Successfully connected to zookeeper server");
+                            exists(ROOT_PATH, this);
+                            break;
+                        case NodeChildrenChanged:
+                            logger.info("Children Node Changed");
+
+                            awaitSemaphore.countDown();
+
+                            try {
+                                zk.getChildren(ROOT_PATH, this);
+                            } catch (Exception e) {
+                                logger.error("cannot watch on children nodes");
+                            }
+
+                            break;
+                        default:
+                            logger.info("Change is not related");
+                            break;
+                    }
+
+                } else {
+                    logger.warn("Failed to connect with zookeeper server -> root node");
+                }
+            }
+        };
+        try {
+            zk = new ZooKeeper(CONNECTION_ADDR, SESSION_TIMEOUT, rootWatcher);
+
+            connectedSemaphore.await();
+
+            createPath(ROOT_PATH,"",rootWatcher);
+
+        }catch (Exception e) {
+            logger.error("Failed to process KVServer Watcher " + e);
+        }
+    }
+
+
+
+
+
     /**
-     * Create ZooKeeper connection
-     *
-     * @param connectAddr    zookeeper address
-     * @param sessionTimeout session timeout
+     * Create node with path
      */
+
+    public void createPath(String path, String data, Watcher watcher) {
+        try {
+            logger.info("Creating node at " + path);
+            Stat stat = this.zk.exists(path, null);
+
+            if (stat != null) {
+                logger.info("node at path " + path + " already exists");
+                deleteNode(path);
+            }
+            this.zk.create(path, data.getBytes(), Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+            logger.info("Successfully create new node " + path);
+            this.zk.exists(path, watcher);
+        } catch (Exception e) {
+            logger.error("Failed to create new node " + path);
+            logger.error(e);
+        }
+    }
+
+
+
+
+
     public void createConnection(String connectAddr, int sessionTimeout) {
         this.releaseConnection();
         try {
@@ -148,12 +242,9 @@ public class ZooKeeperWatcher implements Watcher {
             return;
         }
 
-        // Event state
         KeeperState keeperState = event.getState();
-        // Event type
         EventType eventType = event.getType();
-        // watch event relative path
-        String path = event.getPath();
+
 
         logger.info("watch event is triggered " + event.toString());
 

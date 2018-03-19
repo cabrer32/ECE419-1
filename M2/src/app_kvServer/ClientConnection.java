@@ -6,13 +6,16 @@ import com.google.gson.JsonSyntaxException;
 import com.google.gson.reflect.TypeToken;
 import common.messages.KVMessage;
 import common.messages.Message;
+import common.messages.MetaData;
 import common.module.CommunicationModule;
 import ecs.ECSNode;
 import org.apache.log4j.Logger;
 
+import javax.xml.bind.DatatypeConverter;
 import java.io.IOException;
 import java.lang.reflect.Type;
 import java.net.Socket;
+import java.security.MessageDigest;
 import java.util.ArrayList;
 
 
@@ -136,23 +139,24 @@ public class ClientConnection implements Runnable {
     }
 
     private boolean compare(String key){
-        String[] range = server.getRange();
 
-        if(key.compareTo(range[0]) > 0 && key.compareTo(range[1]) < 0 )
-            return true;
-
-        return false;
-    }
-
-    String metaToJson(ArrayList<ECSNode> meta) {
         try {
-            Type listType = new TypeToken<ArrayList<ECSNode>>() {
-            }.getType();
-            return gson.toJson(meta, listType);
-        } catch (JsonSyntaxException e) {
-            logger.error("Invalid Message syntax " + e.getMessage());
+            MessageDigest md = MessageDigest.getInstance("MD5");
+            md.update(key.getBytes());
+            byte[] digest = md.digest();
+            key = DatatypeConverter.printHexBinary(digest).toUpperCase();
+
+            String[] range = server.getMetaData().getHashRange(server.getName());
+
+            if (key.compareTo(range[0]) > 0 && key.compareTo(range[1]) < 0)
+                return true;
+
+        }catch(Exception e){
+
+            logger.error("Cannot convert md5 " + e);
+
         }
-        return null;
+        return false;
     }
 
     private KVMessage get(String key) throws Exception {
@@ -161,7 +165,7 @@ public class ClientConnection implements Runnable {
         }
 
         if(!compare(key)){
-            return new Message(KVMessage.StatusType.SERVER_NOT_RESPONSIBLE, key, metaToJson(server.getMetaData()));
+            return new Message(KVMessage.StatusType.SERVER_NOT_RESPONSIBLE, key, MetaData.MetaToJson(server.getMetaData()));
         }
 
         String value = server.getKV(key);
@@ -177,7 +181,7 @@ public class ClientConnection implements Runnable {
         }
 
         if(!compare(key)){
-            return new Message(KVMessage.StatusType.SERVER_NOT_RESPONSIBLE, key, metaToJson(server.getMetaData()));
+            return new Message(KVMessage.StatusType.SERVER_NOT_RESPONSIBLE, key, MetaData.MetaToJson(server.getMetaData()));
         }
 
         //case when deleting

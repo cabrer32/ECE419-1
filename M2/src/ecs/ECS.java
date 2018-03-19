@@ -19,12 +19,14 @@ public class ECS {
     private static final String SCRIPT_TEXT = "ssh -n %s nohup java -jar m2-server.jar %s %s %s %s %s %s &";
 
     private Gson gson;
-    private ZooKeeperWatcher zkWatch;
-    private MetaData metaData;
+    private ECSWatcher zkWatch;
 
-    private TreeSet<IECSNode> serverRepo = new TreeSet<>();
-    private TreeSet<IECSNode> serverRepoTaken = new TreeSet<>();
-    private HashMap<IECSNode, Integer> serverRepoMapping = new HashMap<>();
+
+    private MetaData meta;
+    private TreeSet<IECSNode> avaServer = new TreeSet<>();
+    private TreeSet<IECSNode> avaRepica = new TreeSet<>();
+
+
 
     // Zookeeper specific
     private static final int SESSION_TIMEOUT = 10000;
@@ -38,20 +40,20 @@ public class ECS {
     /**
      * if the service is made up of any servers
      **/
-//    private boolean running = false;
-    public ECS(String configFileName) {
+    public ECS(String configFileName, String repicaFileName) {
         gson = new Gson();
-        loadMetaData(configFileName);
-        initZookeeper();
-        // prevent it from printing heartbeat message
-        Logger.getLogger("org.apache.zookeeper").setLevel(Level.ERROR);
+
+        loadFile(configFileName, avaServer, true);
+        loadFile(repicaFileName, avaRepica, false);
+
+        zkWatch = new ECSWatcher();
+        zkWatch.init();
     }
 
-    private void loadMetaData(String configFileName){
+    private void loadFile(String configFileName, TreeSet<IECSNode> servers, boolean coordinate){
         File configFile = new File(configFileName);
         try {
             Scanner scanner = new Scanner(configFile);
-            TreeSet<ECSNode> serverRepo = new TreeSet<>();
             String name, host, hashKey;
             int port;
             ECSNode node;
@@ -65,11 +67,9 @@ public class ECS {
                 md.update(hashKey.getBytes());
                 byte[] digest = md.digest();
                 String startingHash = DatatypeConverter.printHexBinary(digest).toUpperCase();
-                node = new ECSNode(name, host, port, startingHash);
-                serverRepo.add(node);
-                this.serverRepoMapping.put(node, 1);
+                node = new ECSNode(name, host, port, startingHash, coordinate);
+                servers.add(node);
             }
-            this.serverRepo = (TreeSet<IECSNode>) serverRepo.clone();
         } catch (FileNotFoundException e) {
             System.out.println("Error! Unable to open the file!");
             e.printStackTrace();
@@ -78,6 +78,38 @@ public class ECS {
             logger.error(e.getMessage());
         }
     }
+
+    public TreeSet<IECSNode> getAvaliableServers(int count, String cacheStrategy, int cacheSize){
+        if(avaServer.size() < count && avaRepica.size() < count * 2)
+            return null;
+
+        TreeSet<IECSNode> list = new TreeSet<>();
+
+
+        for(int i = 0; i < count; i++){
+            ECSNode node = (ECSNode) avaServer.pollFirst();
+            node.setCachesize(cacheSize); node.setCacheStrategy(cacheStrategy);
+            list.add(node);
+        }
+
+        for(int i = 0; i < count * 2; i++){
+            ECSNode node = (ECSNode) avaRepica.pollFirst();
+            node.setCachesize(cacheSize); node.setCacheStrategy(cacheStrategy);
+            list.add(node);
+        }
+
+        return list;
+    }
+
+
+
+
+
+
+
+
+
+
 
     private TreeSet<IECSNode> arrangeECSNodes(int count, String cacheStrategy, int cacheSize) {
         TreeSet<IECSNode> serverTaken = new TreeSet<>();
@@ -122,12 +154,6 @@ public class ECS {
         }
     }
 
-    private void initZookeeper() {
-        zkWatch = new ZooKeeperWatcher();
-        zkWatch.createConnection(CONNECTION_ADDR, SESSION_TIMEOUT);
-        zkWatch.createPath(ROOT_PATH, "");
-        zkWatch.watchChildren();
-    }
 
     public void startAllNodes() {
         for (IECSNode node : metaData.getServerRepo()){
@@ -137,24 +163,32 @@ public class ECS {
 
     public void sendMetedata(IECSNode node) {
         logger.info("Sending latest metadata to " + node.getNodeName());
-        String json = new Gson().toJson(metaData.getServerRepo());
-        zkWatch.writeData(NODE_PATH_SUFFIX + node.getNodeName(), json);
+        zkWatch.writeData(NODE_PATH_SUFFIX + node.getNodeName(), MetaData.MetaToJson(meta));
     }
 
 
-    public void executeScript(ECSNode node) {
-        zkWatch.clearNode(NODE_PATH_SUFFIX + node.getNodeName());
+    public void initServers(TreeSet<IECSNode> list) {
 
-        String script = String.format(SCRIPT_TEXT, LOCAL_HOST, node.getNodeName(), CONNECTION_ADDR_HOST,
-                CONNECTION_ADDR_PORT, node.getNodePort(), node.getCacheStrategy(), node.getCachesize());
-        Process proc;
-        Runtime run = Runtime.getRuntime();
-        try {
-            logger.info("Running ... " + script);
-            proc = run.exec(script);
-        } catch (IOException e) {
-            logger.error("Failed to execute script!");
+        zkWatch.setSemaphore(list.size());
+
+        for (Iterator<IECSNode> iterator = list.iterator(); iterator.hasNext(); ) {
+            ECSNode node = (ECSNode)iterator.next();
+
+            String script = String.format(SCRIPT_TEXT, LOCAL_HOST, node.getNodeName(), CONNECTION_ADDR_HOST,
+                    CONNECTION_ADDR_PORT, node.getNodePort(), node.getCacheStrategy(), node.getCachesize());
+
+            Runtime run = Runtime.getRuntime();
+            try {
+                logger.info("Running ... " + script);
+                run.exec(script);
+            } catch (IOException e) {
+                logger.error("Failed to execute script!");
+            }
         }
+    }
+
+    public void addMeta(TreeSet<IECSNode> list){
+            meta = new MetaData(meta.getServerRepo().addAll(list);
     }
 
     public boolean removeNodes(Collection<String> nodeNames) {

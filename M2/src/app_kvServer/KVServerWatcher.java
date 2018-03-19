@@ -1,8 +1,6 @@
 package app_kvServer;
 
-
 import common.messages.MetaData;
-import ecs.ECSNode;
 import ecs.IECSNode;
 import org.apache.log4j.Level;
 import org.apache.zookeeper.CreateMode;
@@ -20,7 +18,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import com.google.gson.Gson;
-import com.google.gson.JsonSyntaxException;
 import com.google.gson.reflect.TypeToken;
 
 import org.apache.log4j.Logger;
@@ -363,7 +360,7 @@ public class KVServerWatcher {
             zk = new ZooKeeper(zkAddress, SESSION_TIMEOUT, connectionWatcher);
             logger.info("Connecting to zookeeper server");
 
-            connectedSemaphore.await(10000, TimeUnit.MILLISECONDS);
+            connectedSemaphore.await();
 
             createPath(nodePath,"",childrenWatcher);
 
