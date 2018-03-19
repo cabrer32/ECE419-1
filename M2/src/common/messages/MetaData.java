@@ -1,5 +1,6 @@
 package common.messages;
 
+import ecs.ECS;
 import ecs.ECSNode;
 import ecs.IECSNode;
 import org.apache.log4j.Logger;
@@ -19,9 +20,10 @@ public class MetaData implements IMetaData {
 
     public MetaData(String configFileName) {
         this.configFileName = configFileName;
+        loadMetaData();
     }
 
-    public void loadMetaData(){
+    private void loadMetaData(){
         File configFile = new File(configFileName);
         try {
             Scanner scanner = new Scanner(configFile);
@@ -53,19 +55,21 @@ public class MetaData implements IMetaData {
         }
     }
 
-    private void arrangeECSNodes(int count, String cacheStrategy, int cacheSize) {
+    private TreeSet<IECSNode> arrangeECSNodes(int count, String cacheStrategy, int cacheSize) {
+        TreeSet<IECSNode> serverTaken = new TreeSet<>();
         int availableNodes = 0;
         for (Integer i : serverRepoMapping.values()) {
             availableNodes += i;
         }
         if (availableNodes < count) {
-            return ;
+            return serverTaken;
         } else {
             int i = 0;
             for (IECSNode node : serverRepo) {
                 if (serverRepoMapping.get(node) == 1) {
                     ((ECSNode) node).setCacheStrategy(cacheStrategy);
                     ((ECSNode) node).setCachesize(cacheSize);
+                    serverTaken.add(node);
                     serverRepoTaken.add(node);
                     serverRepoMapping.put(node, 0);
                     i = i + 1;
@@ -75,7 +79,7 @@ public class MetaData implements IMetaData {
                 }
             }
         }
-        setHashRange();
+        return serverTaken;
     }
 
     private void setHashRange(){
@@ -94,31 +98,65 @@ public class MetaData implements IMetaData {
         }
     }
 
-    public TreeSet<IECSNode> getECSNodes(int count, String cacheStrategy, int cacheSize) {
-        arrangeECSNodes(count, cacheStrategy, cacheSize);
+    public TreeSet<IECSNode> setupNodes(int count, String cacheStrategy, int cacheSize) {
+        TreeSet<IECSNode> serverTaken = arrangeECSNodes(count, cacheStrategy, cacheSize);
+        setHashRange();
+        return serverTaken;
+    }
+
+    public TreeSet<IECSNode> getMetaData() {
         return this.serverRepoTaken;
     }
 
-    public IECSNode removeNodes(Collection<String> nodeNames) {
-        return null;
-    }
-
-    public IECSNode addNodes(int count, String cacheStrategy, int cacheSize) {
-        return null;
-    }
-
-    public String toJson(){
-        return "";
+    public boolean removeNodes(Collection<String> nodeNames) {
+        boolean ifSuccess = true;
+        int removedCount = 0;
+        for (String nodeName1 : nodeNames) {
+            for (IECSNode node : serverRepoTaken) {
+                String nodeName = node.getNodeName();
+                if (nodeName.equals(nodeName1)) {
+                    serverRepoTaken.remove(node);
+                    serverRepoMapping.put(node, 1);
+                    removedCount++;
+                    break;
+                }
+            }
+        }
+        if (removedCount != nodeNames.size()) {
+            ifSuccess = false;
+        }
+        return ifSuccess;
     }
 
     @Override
-    public IECSNode getPrecessor(String name) {
-
+    public IECSNode getPredecessor(String name) {
+        Iterator itr = serverRepoTaken.iterator();
+        ECSNode preveNode, nextNode;
+        while (itr.hasNext()) {
+            preveNode = (ECSNode) itr.next();
+            if (itr.hasNext()) {
+                nextNode = (ECSNode) itr.next();
+                if (nextNode.getNodeName().equals(name)) {
+                    return preveNode;
+                }
+            }
+        }
         return null;
     }
 
     @Override
     public IECSNode getSuccessor(String name) {
+        Iterator itr = serverRepoTaken.iterator();
+        ECSNode currentNode, nextNode;
+        while (itr.hasNext()) {
+            currentNode = (ECSNode) itr.next();
+            if (itr.hasNext()) {
+                nextNode = (ECSNode) itr.next();
+                if (nextNode.getNodeName().equals(name)) {
+                    return currentNode;
+                }
+            }
+        }
         return null;
     }
 

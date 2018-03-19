@@ -112,7 +112,7 @@ public class ECSClient implements IECSClient {
 
     @Override
     public Collection<IECSNode> setupNodes(int count, String cacheStrategy, int cacheSize) {
-        return ecs.getECSNodes(count, cacheStrategy, cacheSize);
+        return ecs.setupNodes(count, cacheStrategy, cacheSize);
     }
 
     @Override

@@ -4,7 +4,8 @@ import ecs.IECSNode;
 
 public interface IMetaData {
 
-    public IECSNode getPrecessor(String name);
+    public boolean ifExists(String name);
+    public IECSNode getPredecessor(String name);
     public IECSNode getSuccessor(String name);
     public IECSNode getServerByKey(String key, boolean write);
     public IECSNode[] getReplica(String name);

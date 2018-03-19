@@ -5,19 +5,13 @@ import common.messages.MetaData;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 
-import javax.xml.bind.DatatypeConverter;
-import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.*;
 
 public class ECS {
     private static Logger logger = Logger.getRootLogger();
     //private static final String SCRIPT_TEXT = "ssh -n %s nohup java -jar /m2-server.jar %s %s %s %s %s %s &";
     private static final String SCRIPT_TEXT = "ssh -n %s nohup java -jar m2-server.jar %s %s %s %s %s %s &";
-
 
     private Gson gson;
     private ZooKeeperWatcher zkWatch;
@@ -39,7 +33,6 @@ public class ECS {
     public ECS(String configFileName) {
         gson = new Gson();
         metaData = new MetaData(configFileName);
-        metaData.loadMetaData();
         initZookeeper();
         // prevent it from printing heartbeat message
         Logger.getLogger("org.apache.zookeeper").setLevel(Level.ERROR);
@@ -52,16 +45,18 @@ public class ECS {
         zkWatch.watchChildren();
     }
 
+    public void startAllNodes() {
+        for (IECSNode node : metaData.getMetaData()){
+            sendMetedata(node);
+        }
+    }
+
     public void sendMetedata(IECSNode node) {
         logger.info("Sending latest metadata to " + node.getNodeName());
-        String json = new Gson().toJson(serverRepoTaken);
+        String json = new Gson().toJson(metaData.getMetaData());
         zkWatch.writeData(NODE_PATH_SUFFIX + node.getNodeName(), json);
     }
 
-    public void startAllNodes() {
-        for (IECSNode node : serverRepoTaken)
-            sendMetedata(node);
-    }
 
     public void executeScript(ECSNode node) {
         zkWatch.clearNode(NODE_PATH_SUFFIX + node.getNodeName());
@@ -79,33 +74,13 @@ public class ECS {
     }
 
     public boolean removeNodes(Collection<String> nodeNames) {
-        boolean ifSuccess = true;
-        int removedCount = 0;
-        for (Iterator<String> iterator = nodeNames.iterator(); iterator.hasNext(); ) {
-            for (IECSNode node : serverRepoTaken) {
-                String nodeName = node.getNodeName();
-                if (nodeName.equals(iterator.next())) {
-                    if (zkWatch.deleteNode(NODE_PATH_SUFFIX + nodeName)) {
-                        serverRepoTaken.remove(node);
-                        serverRepoMapping.put(node, 1);
-                        removedCount++;
-                        break;
-                    }
-
-                }
-            }
-        }
-        if (removedCount != nodeNames.size()) {
-            ifSuccess = false;
-        }
-        return ifSuccess;
+        return metaData.removeNodes(nodeNames);
     }
 
 
     public boolean awaitNodes(int timeout) {
         return zkWatch.awaitNodes(timeout);
     }
-
 
     public boolean stop() {
         return zkWatch.writeData(ROOT_PATH, "");
@@ -120,7 +95,7 @@ public class ECS {
     }
 
     public TreeSet<IECSNode> getNodes() {
-        return serverRepoTaken;
+        return metaData.getMetaData();
     }
 
     public void notifyPrecessor(Collection<IECSNode> serversTaken) {
@@ -157,7 +132,7 @@ public class ECS {
         }
     }
 
-    public Collection<IECSNode> getECSNodes(int count, String cacheStrategy, int cacheSize) {
-        return metaData.getECSNodes(count, cacheStrategy, cacheSize);
+    public Collection<IECSNode> setupNodes(int count, String cacheStrategy, int cacheSize) {
+        return metaData.setupNodes(count, cacheStrategy, cacheSize);
     }
 }
