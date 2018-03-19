@@ -419,7 +419,7 @@ public class KVServer implements IKVServer {
 
                 server.initZK();
 
-                new ServerThread(server).start();
+                server.run();
 
             }
         } catch (IOException e) {

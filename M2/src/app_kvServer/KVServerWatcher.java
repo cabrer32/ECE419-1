@@ -38,7 +38,15 @@ public class KVServerWatcher {
     /**
      * Define child path of corresponding ecs node
      */
-    private String childPath = null;
+    private String nodePath = null;
+    /**
+     * Define child path of corresponding ecs node
+     */
+    private String dataPath = null;
+    /**
+     * Define child path of corresponding ecs node
+     */
+    private String signalPath = null;
 
     /**
      * Watcher to receive meta data
@@ -101,7 +109,9 @@ public class KVServerWatcher {
         this.kvServer = kvserver;
         this.zkAddress = zkAddress;
         this.KVname = name;
-        this.childPath = ROOT_PATH + "/" + name;
+        this.nodePath = ROOT_PATH + "/" + name;
+        this.dataPath = ROOT_PATH + "/data";
+        this.signalPath = ROOT_PATH + "/signal";
 
         Logger.getLogger("org.apache.zookeeper").setLevel(Level.ERROR);
 
@@ -193,12 +203,12 @@ public class KVServerWatcher {
 
                 if (event == null) return;
 
-                // watch event state
+
                 KeeperState keeperState = event.getState();
-                // watch even type
+
                 EventType eventType = event.getType();
 
-                logger.info("connection watcher triggered " + event.toString());
+                logger.info("ROOT watcher triggered " + event.toString());
 
                 if (keeperState == KeeperState.SyncConnected) {
                     switch (eventType) {
@@ -208,24 +218,30 @@ public class KVServerWatcher {
                             exists(ROOT_PATH, this);
                             break;
                         case NodeDataChanged:
-                            logger.info("ROOT_PATH data changed");
+                            logger.info("Node Changed");
 
                             String data = readData(ROOT_PATH, this);
 
                             if (data.equals("")) {
                                 kvServer.stop();
                             } else {
+                                if (kvServer.getState() == KVServer.KVServerState.STOPPED)
+                                    kvServer.start();
                                 kvServer.setMetaData(parseJsonObject(data));
                             }
                             break;
+                        case NodeDeleted:
+                            logger.info("Node Deleted");
+                            kvServer.kill();
+                            break;
                         default:
+                            logger.info("Change is not related");
                             break;
                     }
 
                 } else {
-                    logger.warn("Failed to connect with zookeeper server");
+                    logger.warn("Failed to connect with zookeeper server -> root node");
                 }
-
             }
         };
 
@@ -235,28 +251,22 @@ public class KVServerWatcher {
 
                 if (event == null) return;
 
-                // watch event state
-                KeeperState keeperState = event.getState();
-                // watch even type
-                EventType eventType = event.getType();
-                // watch event relative path
-                String path = event.getPath();
 
-                logger.info("children watcher triggered " + event.toString());
+                KeeperState keeperState = event.getState();
+
+                EventType eventType = event.getType();
+
+                logger.info("Children watcher triggered " + event.toString());
 
                 if (keeperState == KeeperState.SyncConnected) {
                     switch (eventType) {
                         case NodeDataChanged:
-                            logger.info("NODE metadata is changed.");
-                            String data = readData(path, this);
-
+                            logger.info("Node is changed.");
+                            String data = readData(nodePath, this);
                             updateServer(parseJsonObject(data));
                             break;
-                        case NodeDeleted:
-                            kvServer.close();
-
                         default:
-                            break;
+                            logger.info("Change is not related");
                     }
 
                 } else {
@@ -270,46 +280,38 @@ public class KVServerWatcher {
             public void process(WatchedEvent event) {
                 if (event == null) return;
 
-                // watch event state
+
                 KeeperState keeperState = event.getState();
-                // watch even type
+
                 EventType eventType = event.getType();
-                // watch event relative path
+
                 String path = event.getPath();
 
-                logger.info("data watcher triggered " + event.toString());
+                logger.info("Data watcher triggered " + event.toString());
 
                 if (keeperState == KeeperState.SyncConnected) {
                     switch (eventType) {
                         case NodeCreated:
 
-                            logger.info("received new data from");
+                            logger.info("Node is changed.");
+                            String data = readData(dataPath, null);
 
-                            String data = readData(path, dataWatcher);
+                            if(data.equals("")){
+                                logger.info("Change is not related");
+                                return;
+                            }
+
                             Map.Entry<String, String> kv = parseJsonEntry(data);
                             kvServer.DBput(kv.getKey(), kv.getValue());
 
-                            deleteNode(path);
-                            exists(path,this);
-                            break;
-                        case NodeDeleted:
-
-                            if(path.equals(childPath + "/data"))
-                            {
-                                logger.info("Irrelevant");
-                                return;
-                            }
-                            logger.info("Ack received  ");
-
-                            if (dataSemaphore != null)
-                                dataSemaphore.countDown();
-
+                            writeData(dataPath,"");
                             break;
                         default:
+                            logger.info("Change is not related");
                             break;
                     }
                 } else {
-                    logger.warn("Failed to connect with zookeeper server -> children node");
+                    logger.warn("Failed to connect with zookeeper server -> data node");
                 }
 
             }
@@ -321,9 +323,9 @@ public class KVServerWatcher {
 
             connectedSemaphore.await(10000, TimeUnit.MILLISECONDS);
 
-            createPath(childPath, "", childrenWatcher);
+            createPath(nodePath,"",childrenWatcher);
 
-            exists((childPath + "/data"), dataWatcher);
+            createPath(signalPath, "", null);
 
         } catch (Exception e) {
             logger.error("Failed to process KVServer Watcher " + e);
