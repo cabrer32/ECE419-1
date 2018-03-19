@@ -27,7 +27,6 @@ public class ECSClient implements IECSClient {
     public ECSClient(String configFileName) {
         this.configFileName = configFileName;
         ecs = new ECS(configFileName);
-        ecs.initServerRepo();
     }
 
     @Override

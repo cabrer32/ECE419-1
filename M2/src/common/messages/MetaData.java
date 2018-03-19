@@ -1,60 +1,77 @@
 package common.messages;
 
-
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
-import com.google.gson.reflect.TypeToken;
 import ecs.ECSNode;
 import ecs.IECSNode;
-
-import java.lang.reflect.Type;
 import java.util.*;
 
 public class MetaData implements IMetaData {
+    private TreeSet<IECSNode> serverRepo;
 
-    private TreeSet<IECSNode> serverSet = null;
-
-
-    public MetaData(TreeSet<IECSNode> serverSet) {
-        this.serverSet = serverSet;
+    public MetaData(TreeSet<IECSNode> serverRepo) {
+        this.serverRepo = serverRepo;
     }
 
+    public TreeSet<IECSNode> getServerRepo() {
+        return serverRepo;
+    }
 
     @Override
     public String getPredecessor(String name) {
-        Iterator itr = serverSet.iterator();
+        Iterator itr = serverRepo.iterator();
+        if (serverRepo.size() == 1) {
+            return ((IECSNode)itr.next()).getNodeName();
+        }
+        int idx = 0;
         ECSNode prevNode, curNode;
         while (itr.hasNext()) {
             prevNode = (ECSNode) itr.next();
+            if (idx == 0 && prevNode.getNodeName().equals(name)) {
+                return serverRepo.last().getNodeName();
+            }
             if (itr.hasNext()) {
                 curNode = (ECSNode) itr.next();
                 if (curNode.getNodeName().equals(name)) {
                     return prevNode.getNodeName();
                 }
             }
+            idx++;
         }
         return null;
     }
 
     @Override
     public String getSuccessor(String name) {
-        Iterator itr = serverSet.iterator();
+        Iterator itr = serverRepo.iterator();
+        if (serverRepo.size() == 1) {
+            return ((IECSNode) itr.next()).getNodeName();
+        }
+        int idx = 0;
         ECSNode node;
         while (itr.hasNext()) {
             node = (ECSNode) itr.next();
             if (node.getNodeName().equals(name)){
                 if (itr.hasNext()) {
                     return ((ECSNode) itr.next()).getNodeName();
+                } else if (idx == serverRepo.size() - 1) {
+                    return serverRepo.first().getNodeName();
                 } else {
                     break;
                 }
             }
+            idx++;
         }
         return null;
     }
 
     @Override
     public IECSNode getServerByKey(String key, boolean write) {
+        for (IECSNode node : serverRepo) {
+            if (((ECSNode)node).contains(key)) {
+                return node;
+            }
+        }
         return null;
     }
 
@@ -66,6 +83,16 @@ public class MetaData implements IMetaData {
     @Override
     public IECSNode getCoordinator(String name) {
         return null;
+    }
+
+    @Override
+    public boolean hasServer(String name) {
+        for (IECSNode node : serverRepo) {
+            if (node.getNodeName().equals(name)){
+                return true;
+            }
+        }
+        return false;
     }
 
 

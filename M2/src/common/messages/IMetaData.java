@@ -9,5 +9,4 @@ public interface IMetaData {
     public IECSNode[] getReplica(String name);
     public IECSNode getCoordinator(String name);
     public boolean hasServer(String name);
-
 }

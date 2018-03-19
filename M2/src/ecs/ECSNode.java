@@ -4,6 +4,11 @@ public class ECSNode implements IECSNode, Comparable<ECSNode>{
     private static final String STARTING_HASH_VALUE = "00000000000000000000000000000000";
     private static final String ENDING_HASH_VALUE = "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF";
 
+    public enum NodeType {
+        COORDINATOR,
+        REPLICA
+    }
+
     private String name;
     private String host;
     private String startingHashValue;

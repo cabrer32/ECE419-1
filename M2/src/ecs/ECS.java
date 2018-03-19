@@ -5,7 +5,12 @@ import common.messages.MetaData;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 
+import javax.xml.bind.DatatypeConverter;
+import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.*;
 
 public class ECS {
@@ -16,6 +21,10 @@ public class ECS {
     private Gson gson;
     private ZooKeeperWatcher zkWatch;
     private MetaData metaData;
+
+    private TreeSet<IECSNode> serverRepo = new TreeSet<>();
+    private TreeSet<IECSNode> serverRepoTaken = new TreeSet<>();
+    private HashMap<IECSNode, Integer> serverRepoMapping = new HashMap<>();
 
     // Zookeeper specific
     private static final int SESSION_TIMEOUT = 10000;
@@ -32,10 +41,85 @@ public class ECS {
 //    private boolean running = false;
     public ECS(String configFileName) {
         gson = new Gson();
-        metaData = new MetaData(configFileName);
+        loadMetaData(configFileName);
         initZookeeper();
         // prevent it from printing heartbeat message
         Logger.getLogger("org.apache.zookeeper").setLevel(Level.ERROR);
+    }
+
+    private void loadMetaData(String configFileName){
+        File configFile = new File(configFileName);
+        try {
+            Scanner scanner = new Scanner(configFile);
+            TreeSet<ECSNode> serverRepo = new TreeSet<>();
+            String name, host, hashKey;
+            int port;
+            ECSNode node;
+            while (scanner.hasNextLine()) {
+                String[] tokens = scanner.nextLine().split(" ");
+                name = tokens[0];
+                host = tokens[1];
+                port = Integer.parseInt(tokens[2]);
+                hashKey = host + ":" + String.valueOf(port);
+                MessageDigest md = MessageDigest.getInstance("MD5");
+                md.update(hashKey.getBytes());
+                byte[] digest = md.digest();
+                String startingHash = DatatypeConverter.printHexBinary(digest).toUpperCase();
+                node = new ECSNode(name, host, port, startingHash);
+                serverRepo.add(node);
+                this.serverRepoMapping.put(node, 1);
+            }
+            this.serverRepo = (TreeSet<IECSNode>) serverRepo.clone();
+        } catch (FileNotFoundException e) {
+            System.out.println("Error! Unable to open the file!");
+            e.printStackTrace();
+            System.exit(1);
+        } catch (NoSuchAlgorithmException e) {
+            logger.error(e.getMessage());
+        }
+    }
+
+    private TreeSet<IECSNode> arrangeECSNodes(int count, String cacheStrategy, int cacheSize) {
+        TreeSet<IECSNode> serverTaken = new TreeSet<>();
+        int availableNodes = 0;
+        for (Integer i : serverRepoMapping.values()) {
+            availableNodes += i;
+        }
+        if (availableNodes < count) {
+            return serverTaken;
+        } else {
+            int i = 0;
+            for (IECSNode node : serverRepo) {
+                if (serverRepoMapping.get(node) == 1) {
+                    ((ECSNode) node).setCacheStrategy(cacheStrategy);
+                    ((ECSNode) node).setCachesize(cacheSize);
+                    serverTaken.add(node);
+                    serverRepoTaken.add(node);
+                    serverRepoMapping.put(node, 0);
+                    i = i + 1;
+                }
+                if (i == count) {
+                    break;
+                }
+            }
+        }
+        return serverTaken;
+    }
+
+    private void setHashRange(){
+        String start = ((ECSNode) serverRepoTaken.last()).getStartingHashValue();
+        String end = ((ECSNode) serverRepoTaken.first()).getStartingHashValue();
+        ((ECSNode) serverRepoTaken.last()).setEndingHashValue(((ECSNode) serverRepoTaken.first()).getStartingHashValue());
+        Iterator itr = serverRepoTaken.iterator();
+        ECSNode currentNode, nextNode;
+        if (itr.hasNext()) {
+            currentNode = (ECSNode) itr.next();
+            while (itr.hasNext()) {
+                nextNode = (ECSNode) itr.next();
+                currentNode.setEndingHashValue(nextNode.getStartingHashValue());
+                currentNode = nextNode;
+            }
+        }
     }
 
     private void initZookeeper() {
@@ -46,14 +130,14 @@ public class ECS {
     }
 
     public void startAllNodes() {
-        for (IECSNode node : metaData.getMetaData()){
+        for (IECSNode node : metaData.getServerRepo()){
             sendMetedata(node);
         }
     }
 
     public void sendMetedata(IECSNode node) {
         logger.info("Sending latest metadata to " + node.getNodeName());
-        String json = new Gson().toJson(metaData.getMetaData());
+        String json = new Gson().toJson(metaData.getServerRepo());
         zkWatch.writeData(NODE_PATH_SUFFIX + node.getNodeName(), json);
     }
 
@@ -74,7 +158,23 @@ public class ECS {
     }
 
     public boolean removeNodes(Collection<String> nodeNames) {
-        return metaData.removeNodes(nodeNames);
+        boolean ifSuccess = true;
+        int removedCount = 0;
+        for (String nodeName1 : nodeNames) {
+            for (IECSNode node : serverRepoTaken) {
+                String nodeName = node.getNodeName();
+                if (nodeName.equals(nodeName1)) {
+                    serverRepoTaken.remove(node);
+                    serverRepoMapping.put(node, 1);
+                    removedCount++;
+                    break;
+                }
+            }
+        }
+        if (removedCount != nodeNames.size()) {
+            ifSuccess = false;
+        }
+        return ifSuccess;
     }
 
 
@@ -95,7 +195,7 @@ public class ECS {
     }
 
     public TreeSet<IECSNode> getNodes() {
-        return metaData.getMetaData();
+        return metaData.getServerRepo();
     }
 
     public void notifyPrecessor(Collection<IECSNode> serversTaken) {
@@ -133,6 +233,8 @@ public class ECS {
     }
 
     public Collection<IECSNode> setupNodes(int count, String cacheStrategy, int cacheSize) {
-        return metaData.setupNodes(count, cacheStrategy, cacheSize);
+        TreeSet<IECSNode> nodes = arrangeECSNodes(count, cacheStrategy, cacheSize);
+        setHashRange();
+        return nodes;
     }
 }
