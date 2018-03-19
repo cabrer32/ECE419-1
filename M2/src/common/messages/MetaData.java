@@ -21,7 +21,7 @@ public class MetaData implements IMetaData {
 
 
     @Override
-    public IECSNode getPredecessor(String name) {
+    public String getPredecessor(String name) {
         Iterator itr = serverSet.iterator();
         ECSNode prevNode, curNode;
         while (itr.hasNext()) {
@@ -29,7 +29,7 @@ public class MetaData implements IMetaData {
             if (itr.hasNext()) {
                 curNode = (ECSNode) itr.next();
                 if (curNode.getNodeName().equals(name)) {
-                    return prevNode;
+                    return prevNode.getNodeName();
                 }
             }
         }
@@ -37,14 +37,14 @@ public class MetaData implements IMetaData {
     }
 
     @Override
-    public IECSNode getSuccessor(String name) {
+    public String getSuccessor(String name) {
         Iterator itr = serverSet.iterator();
         ECSNode node;
         while (itr.hasNext()) {
             node = (ECSNode) itr.next();
             if (node.getNodeName().equals(name)){
                 if (itr.hasNext()) {
-                    return (ECSNode) itr.next();
+                    return ((ECSNode) itr.next()).getNodeName();
                 } else {
                     break;
                 }

@@ -2,6 +2,7 @@ package app_kvServer;
 
 import app_kvServer.Cache.*;
 
+import common.messages.MetaData;
 import common.module.ServerThread;
 import ecs.ECSNode;
 import ecs.IECSNode;
@@ -68,7 +69,7 @@ public class KVServer implements IKVServer {
     /**
      * metadata
      */
-    ArrayList<ECSNode> serversTaken;
+    MetaData meta;
 
 
     /**
@@ -150,25 +151,18 @@ public class KVServer implements IKVServer {
         running = true;
     }
 
-    public ArrayList<ECSNode> getMetaData() {
-        return serversTaken;
+    public MetaData getMetaData() {
+        return meta;
     }
 
     public String getName() {
         return name;
     }
 
-    public void setMetaData(ArrayList<ECSNode> serversTaken) {
-        this.serversTaken = serversTaken;
+    public void setMetaData(MetaData meta) {
+        this.meta = meta;
     }
 
-    public String[] getRange() {
-        for (IECSNode node : serversTaken)
-            if (node.getNodeName().equals(name))
-                return node.getNodeHashRange();
-
-        return null;
-    }
 
     public void DBput(String key, String value) {
         try {

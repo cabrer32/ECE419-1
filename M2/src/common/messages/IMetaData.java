@@ -3,12 +3,11 @@ package common.messages;
 import ecs.IECSNode;
 
 public interface IMetaData {
-    public IECSNode getPredecessor(String name);
-    public IECSNode getSuccessor(String name);
+    public String getPredecessor(String name);
+    public String getSuccessor(String name);
     public IECSNode getServerByKey(String key, boolean write);
     public IECSNode[] getReplica(String name);
     public IECSNode getCoordinator(String name);
-
-    public
+    public boolean hasServer(String name);
 
 }

@@ -1,6 +1,7 @@
 package app_kvServer;
 
 
+import common.messages.MetaData;
 import ecs.ECSNode;
 import org.apache.log4j.Level;
 import org.apache.zookeeper.CreateMode;
@@ -227,7 +228,7 @@ public class KVServerWatcher {
                             } else {
                                 if (kvServer.getState() == KVServer.KVServerState.STOPPED)
                                     kvServer.start();
-                                kvServer.setMetaData(parseJsonObject(data));
+                                kvServer.setMetaData(MetaData.JsonToMeta(data));
                             }
                             break;
                         case NodeDeleted:
@@ -263,7 +264,7 @@ public class KVServerWatcher {
                         case NodeDataChanged:
                             logger.info("Node is changed.");
                             String data = readData(nodePath, this);
-                            updateServer(parseJsonObject(data));
+                            updateServer(MetaData.JsonToMeta(data));
                             break;
                         default:
                             logger.info("Change is not related");
@@ -284,8 +285,6 @@ public class KVServerWatcher {
                 KeeperState keeperState = event.getState();
 
                 EventType eventType = event.getType();
-
-                String path = event.getPath();
 
                 logger.info("Data watcher triggered " + event.toString());
 
@@ -333,93 +332,26 @@ public class KVServerWatcher {
     }
 
 
-    void updateServer(ArrayList<ECSNode> meta) {
+    void updateServer(MetaData meta) {
 
-        //start server
-        if (kvServer.getState() == KVServer.KVServerState.STOPPED) {
-            kvServer.setMetaData(meta);
-            kvServer.start();
+        if(!meta.hasServer(KVname)){
+            //remove itself
+            MetaData oldMeta = kvServer.getMetaData();
 
-            return;
+            String successor = oldMeta.getSuccessor(KVname);
+
+            while(!meta.hasServer(successor))
+                successor = oldMeta.getSuccessor(successor.getNodeName());
+
+
+
+        }
+        else{
+            //transfer data to someone else
         }
 
-        String oldRange[] = kvServer.getRange();
-
-        boolean edge = oldRange[0].compareTo(oldRange[1]) > 0;
-
-        boolean destroy = true;
-
-
-        //there are new server coming
-        for (int i = 0; i < meta.size(); i++) {
-
-            ECSNode node = meta.get(i);
-
-            if (node.getNodeName().equals(kvServer.getName())) destroy = false;
-
-            if (!node.getNodeName().equals(kvServer.getName())) {
-                if (edge && node.getStartingHashValue().compareTo(oldRange[0]) >= 0 &&
-                        node.getEndingHashValue().compareTo(oldRange[1]) <= 0) {
-
-                    try {
-                        kvServer.stop();
-                        kvServer.moveData(node.getNodeHashRange(), node.getNodeName());
-
-                    } catch (Exception e) {
-                        logger.error("Error while moving data " + node.getNodeName());
-                    }
-                }
-
-            }
-        }
-
-
-        //Need to destroy node
-        if (destroy) {
-            for (int i = 0; i < meta.size(); i++) {
-                ECSNode node = meta.get(i);
-
-                if (!node.getNodeName().equals(kvServer.getName())) {
-                    if (edge && node.getStartingHashValue().compareTo(oldRange[0]) <= 0 &&
-                            node.getEndingHashValue().compareTo(oldRange[1]) >= 0) {
-                        try {
-                            kvServer.lockWrite();
-                            kvServer.moveData(node.getNodeHashRange(), node.getNodeName());
-                            kvServer.unlockWrite();
-                        } catch (Exception e) {
-                            logger.error("Error while moving data to " + node.getNodeName());
-                        }
-                    }
-
-                }
-            }
-        }
-
-        writeData(ROOT_PATH, metaToJson(meta));
     }
 
-    String metaToJson(ArrayList<ECSNode> meta) {
-        try {
-            Type listType = new TypeToken<ArrayList<ECSNode>>() {
-            }.getType();
-            return gson.toJson(meta, listType);
-        } catch (JsonSyntaxException e) {
-            logger.error("Invalid Message syntax " + e.getMessage());
-        }
-        return null;
-    }
-
-    ArrayList<ECSNode> parseJsonObject(String data) {
-        try {
-            Type listType = new TypeToken<ArrayList<ECSNode>>() {
-            }.getType();
-            return gson.fromJson(data, listType);
-        } catch (JsonSyntaxException e) {
-            logger.error("Invalid Message syntax " + e.getMessage());
-
-        }
-        return null;
-    }
 
     Map.Entry<String, String> parseJsonEntry(String data) {
         Type Type = new TypeToken<Map.Entry<String, String>>() {
