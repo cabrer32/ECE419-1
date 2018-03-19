@@ -7,6 +7,10 @@ public interface IMetaData {
     public String getSuccessor(String name);
     public IECSNode getServerByKey(String key, boolean write);
     public IECSNode[] getReplica(String name);
-    public IECSNode getCoordinator(String name);
+    public String getCoordinator(String name);
     public boolean hasServer(String name);
+    public boolean isCoordinator(String name);
+    public String[] getHashRange(String name);
+    public IECSNode[] getServerBetween(String precessor, String name);
+
 }
