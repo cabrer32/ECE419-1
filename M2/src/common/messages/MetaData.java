@@ -1,9 +1,13 @@
 package common.messages;
 
 
+import com.google.gson.Gson;
+import com.google.gson.JsonSyntaxException;
+import com.google.gson.reflect.TypeToken;
 import ecs.ECSNode;
 import ecs.IECSNode;
 
+import java.lang.reflect.Type;
 import java.util.*;
 
 public class MetaData implements IMetaData {
@@ -12,13 +16,13 @@ public class MetaData implements IMetaData {
 
 
     public MetaData(TreeSet<IECSNode> serverSet) {
-        this.serverSet = serverSet
+        this.serverSet = serverSet;
     }
 
 
     @Override
     public IECSNode getPredecessor(String name) {
-        Iterator itr = serverRepoTaken.iterator();
+        Iterator itr = serverSet.iterator();
         ECSNode prevNode, curNode;
         while (itr.hasNext()) {
             prevNode = (ECSNode) itr.next();
@@ -34,7 +38,7 @@ public class MetaData implements IMetaData {
 
     @Override
     public IECSNode getSuccessor(String name) {
-        Iterator itr = serverRepoTaken.iterator();
+        Iterator itr = serverSet.iterator();
         ECSNode node;
         while (itr.hasNext()) {
             node = (ECSNode) itr.next();
@@ -64,4 +68,23 @@ public class MetaData implements IMetaData {
         return null;
     }
 
+
+    public static String MetaToJson (MetaData meta) {
+        try {
+
+            return new Gson().toJson(meta, MetaData.class);
+        } catch (JsonSyntaxException e) {
+            System.out.println("Invalid Message syntax " + e.getMessage());
+        }
+        return null;
+    }
+
+    public static MetaData JsonToMeta (String meta) {
+        try {
+            return new Gson().fromJson(meta, MetaData.class);
+        } catch (JsonSyntaxException e) {
+            System.out.println("Invalid Message syntax " + e.getMessage());
+        }
+        return null;
+    }
 }

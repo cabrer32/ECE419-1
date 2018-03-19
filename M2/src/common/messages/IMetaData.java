@@ -8,4 +8,7 @@ public interface IMetaData {
     public IECSNode getServerByKey(String key, boolean write);
     public IECSNode[] getReplica(String name);
     public IECSNode getCoordinator(String name);
+
+    public
+
 }
