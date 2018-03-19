@@ -41,8 +41,6 @@ public class ECS {
      * if the service is made up of any servers
      **/
     public ECS(String configFileName, String repicaFileName) {
-        gson = new Gson();
-
         loadFile(configFileName, avaServer, true);
         loadFile(repicaFileName, avaRepica, false);
 
@@ -138,31 +136,12 @@ public class ECS {
         return serverTaken;
     }
 
-    private void setHashRange(){
-        String start = ((ECSNode) serverRepoTaken.last()).getStartingHashValue();
-        String end = ((ECSNode) serverRepoTaken.first()).getStartingHashValue();
-        ((ECSNode) serverRepoTaken.last()).setEndingHashValue(((ECSNode) serverRepoTaken.first()).getStartingHashValue());
-        Iterator itr = serverRepoTaken.iterator();
-        ECSNode currentNode, nextNode;
-        if (itr.hasNext()) {
-            currentNode = (ECSNode) itr.next();
-            while (itr.hasNext()) {
-                nextNode = (ECSNode) itr.next();
-                currentNode.setEndingHashValue(nextNode.getStartingHashValue());
-                currentNode = nextNode;
-            }
-        }
-    }
-
 
     public void startAllNodes() {
-        for (IECSNode node : metaData.getServerRepo()){
-            sendMetedata(node);
-        }
+        zkWatch.writeData(ROOT_PATH, MetaData.MetaToJson(meta));
     }
 
-    public void sendMetedata(IECSNode node) {
-        logger.info("Sending latest metadata to " + node.getNodeName());
+    public void sendMeta(IECSNode node) {
         zkWatch.writeData(NODE_PATH_SUFFIX + node.getNodeName(), MetaData.MetaToJson(meta));
     }
 
@@ -192,23 +171,18 @@ public class ECS {
     }
 
     public boolean removeNodes(Collection<String> nodeNames) {
-        boolean ifSuccess = true;
-        int removedCount = 0;
-        for (String nodeName1 : nodeNames) {
-            for (IECSNode node : serverRepoTaken) {
-                String nodeName = node.getNodeName();
-                if (nodeName.equals(nodeName1)) {
-                    serverRepoTaken.remove(node);
-                    serverRepoMapping.put(node, 1);
-                    removedCount++;
-                    break;
-                }
-            }
+        
+        for (String nodeName : nodeNames) {
+            String coordinator = meta.getCoordinator(nodeName);
+            ArrayList<String> replica = meta.getReplica(nodeName);
+
+            avaServer.add(meta.removeNode(coordinator));
+            for(String node: replica)
+                avaRepica.add(meta.removeNode(node));
+
         }
-        if (removedCount != nodeNames.size()) {
-            ifSuccess = false;
-        }
-        return ifSuccess;
+
+        return true;
     }
 
 
@@ -224,45 +198,27 @@ public class ECS {
         return zkWatch.deleteAllNodes(ROOT_PATH, NODE_PATH_SUFFIX, serverRepoTaken);
     }
 
-    public void setSemaphore(int count) {
-        zkWatch.setSemaphore(count);
-    }
-
     public TreeSet<IECSNode> getNodes() {
         return metaData.getServerRepo();
     }
 
-    public void notifyPrecessor(Collection<IECSNode> serversTaken) {
-        TreeSet<IECSNode> tmp = (TreeSet<IECSNode>) this.serverRepoTaken.clone();
-        tmp.removeAll(serversTaken);
-        Iterator itr1 = serversTaken.iterator();
-        ECSNode node1 = null;
-        ECSNode smallerNode;
-        ECSNode largerNode;
-        HashMap<String, IECSNode> map = new HashMap<>();
-        while (itr1.hasNext() && tmp.size() > 0) {
-            smallerNode = null;
-            largerNode = null;
-            node1 = (ECSNode) itr1.next();
-            for (IECSNode node2 : tmp) {
-                if (node1.compareTo((ECSNode) node2) <= 0) {
-                    largerNode = (ECSNode) node2;
-                } else {
-                    smallerNode = (ECSNode) node2;
-                }
-                if (smallerNode == null && largerNode != null) {
-                    map.put(tmp.last().getNodeName(), tmp.last());
-                    break;
-                } else if (smallerNode != null && largerNode != null) {
-                    map.put(smallerNode.getNodeName(), smallerNode);
-                } else ;
-            }
-            if (largerNode == null) {
-                map.put(smallerNode.getNodeName(), smallerNode);
-            }
+    public void notifySuccessor(TreeSet <IECSNode> serversTaken) {
+
+        HashSet<String> list = new HashSet<>();
+
+
+        for(IECSNode node : serversTaken){
+            String successor = meta.getSuccessor(node.getNodeName());
+
+            while(serversTaken.contains(meta.getNode(successor)))
+                successor = meta.getSuccessor(successor);
+
+            list.add(successor);
         }
-        for (IECSNode node : map.values()) {
-            sendMetedata(node);
+
+
+        for(String name : list){
+            zkWatch.writeData(NODE_PATH_SUFFIX + name,MetaData.MetaToJson(meta));
         }
     }
 

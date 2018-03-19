@@ -71,8 +71,7 @@ public class ECSClient implements IECSClient {
 
     @Override
     public Collection<IECSNode> addNodes(int count, String cacheStrategy, int cacheSize) {
-        // TODO
-        Collection<IECSNode> serversTaken = ecs.getAvaliableServers(count, cacheStrategy, cacheSize);
+        Collection<IECSNode> serversTaken = setupNodes(count, cacheStrategy, cacheSize);
 
         if (serversTaken != null) {
 
@@ -88,12 +87,9 @@ public class ECSClient implements IECSClient {
             ecs.addMeta((TreeSet<IECSNode>) serversTaken);
 
             if(running) {
-                for (IECSNode node : serversTaken) {
-                    ecs.sendMetedata(node);
-                }
+                ecs.startAllNodes();
+                ecs.notifySuccessor((TreeSet<IECSNode>) serversTaken);
             }
-
-            ecs.notifyPrecessor(serversTaken);
 
         } else {
             logger.warn("Not enough servers available for allocation!");
@@ -104,7 +100,7 @@ public class ECSClient implements IECSClient {
 
     @Override
     public Collection<IECSNode> setupNodes(int count, String cacheStrategy, int cacheSize) {
-        return ecs.setupNodes(count, cacheStrategy, cacheSize);
+        return ecs.getAvaliableServers(count, cacheStrategy, cacheSize);
     }
 
     @Override
@@ -322,12 +318,18 @@ public class ECSClient implements IECSClient {
                 System.out.println("Usage: ECS <configuration file>!");
             } else {
                 String configFileName = args[0];
+                String repicaFileName = args[1];
                 File f = new File(configFileName);
                 if (!f.exists() || f.isDirectory()) {
                     System.out.println("Error! Incorrect file path!");
                     System.exit(1);
                 }
-                ECSClient ecsClient = new ECSClient(configFileName);
+                f = new File(repicaFileName);
+                if (!f.exists() || f.isDirectory()) {
+                    System.out.println("Error! Incorrect file path!");
+                    System.exit(1);
+                }
+                ECSClient ecsClient = new ECSClient(configFileName, repicaFileName);
                 ecsClient.run();
             }
         } catch (IOException e) {

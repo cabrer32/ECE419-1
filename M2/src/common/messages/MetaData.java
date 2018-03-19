@@ -14,8 +14,28 @@ import java.util.*;
 public class MetaData implements IMetaData {
     private TreeSet<IECSNode> serverRepo;
 
+
     public MetaData(TreeSet<IECSNode> serverRepo) {
         this.serverRepo = serverRepo;
+        setHashRange();
+    }
+
+    private void setHashRange() {
+
+        String start = ((ECSNode) serverRepo.last()).getStartingHashValue();
+        String end = ((ECSNode) serverRepo.first()).getStartingHashValue();
+        ((ECSNode) serverRepo.last()).setEndingHashValue(((ECSNode) serverRepo.first()).getStartingHashValue());
+        Iterator itr = serverRepo.iterator();
+        ECSNode currentNode, nextNode;
+        if (itr.hasNext()) {
+            currentNode = (ECSNode) itr.next();
+            while (itr.hasNext()) {
+                nextNode = (ECSNode) itr.next();
+                currentNode.setEndingHashValue(nextNode.getStartingHashValue());
+                currentNode = nextNode;
+            }
+        }
+
     }
 
     public TreeSet<IECSNode> getServerRepo() {
@@ -27,7 +47,7 @@ public class MetaData implements IMetaData {
     public String getPredecessor(String name) {
         Iterator itr = serverRepo.iterator();
         if (serverRepo.size() == 1) {
-            return ((IECSNode)itr.next()).getNodeName();
+            return ((IECSNode) itr.next()).getNodeName();
         }
         int idx = 0;
         ECSNode prevNode, curNode;
@@ -57,7 +77,7 @@ public class MetaData implements IMetaData {
         ECSNode node;
         while (itr.hasNext()) {
             node = (ECSNode) itr.next();
-            if (node.getNodeName().equals(name)){
+            if (node.getNodeName().equals(name)) {
                 if (itr.hasNext()) {
                     return ((ECSNode) itr.next()).getNodeName();
                 } else if (idx == serverRepo.size() - 1) {
@@ -79,16 +99,16 @@ public class MetaData implements IMetaData {
             md.update(key.getBytes());
             byte[] digest = md.digest();
             String keyHashValue = DatatypeConverter.printHexBinary(digest).toUpperCase();
-            if(write) {
+            if (write) {
                 for (IECSNode node : serverRepo) {
-                    if (((ECSNode)node).contains(keyHashValue)) {
+                    if (((ECSNode) node).contains(keyHashValue)) {
                         return node;
                     }
                 }
             } else {
                 ArrayList<IECSNode> nodes = new ArrayList<>();
                 for (IECSNode node : serverRepo) {
-                    if (((ECSNode)node).contains(keyHashValue)) {
+                    if (((ECSNode) node).contains(keyHashValue)) {
                         nodes.add(node);
                     }
                 }
@@ -142,7 +162,7 @@ public class MetaData implements IMetaData {
     @Override
     public boolean hasServer(String name) {
         for (IECSNode node : serverRepo) {
-            if (node.getNodeName().equals(name)){
+            if (node.getNodeName().equals(name)) {
                 return true;
             }
         }
@@ -202,7 +222,7 @@ public class MetaData implements IMetaData {
                 }
             }
             while (itr.hasNext()) {
-                if(((ECSNode) itr.next()).getNodeName().equals(successor)) {
+                if (((ECSNode) itr.next()).getNodeName().equals(successor)) {
                     break;
                 }
             }
@@ -214,8 +234,13 @@ public class MetaData implements IMetaData {
         }
     }
 
+    @Override
+    public IECSNode getNode(String name) {
+        return null;
+    }
 
-    public static String MetaToJson (MetaData meta) {
+
+    public static String MetaToJson(MetaData meta) {
         try {
             return new Gson().toJson(meta, MetaData.class);
         } catch (JsonSyntaxException e) {
@@ -224,7 +249,7 @@ public class MetaData implements IMetaData {
         return null;
     }
 
-    public static MetaData JsonToMeta (String meta) {
+    public static MetaData JsonToMeta(String meta) {
         try {
             return new Gson().fromJson(meta, MetaData.class);
         } catch (JsonSyntaxException e) {

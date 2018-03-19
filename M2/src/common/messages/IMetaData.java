@@ -14,4 +14,8 @@ public interface IMetaData {
     public boolean isCoordinator(String name);
     public String[] getHashRange(String name);
     public ArrayList<IECSNode> getServerBetween(String precessor, String name);
+
+    public IECSNode getNode(String name);
+
+    public IECSNode removeNode(String name);
 }
