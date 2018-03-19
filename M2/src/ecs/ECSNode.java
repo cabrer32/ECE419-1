@@ -4,11 +4,6 @@ public class ECSNode implements IECSNode, Comparable<ECSNode>{
     private static final String STARTING_HASH_VALUE = "00000000000000000000000000000000";
     private static final String ENDING_HASH_VALUE = "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF";
 
-    public enum NodeType {
-        COORDINATOR,
-        REPLICA
-    }
-
     private String name;
     private String host;
     private String startingHashValue;
@@ -16,12 +11,14 @@ public class ECSNode implements IECSNode, Comparable<ECSNode>{
     private String cacheStrategy;
     private int cachesize;
     private int port;
+    private boolean type;
 
-    public ECSNode(String name, String host, int port, String startingHashValue) {
+    public ECSNode(String name, String host, int port, String startingHashValue, boolean type) {
         this.name = name;
         this.host = host;
         this.port = port;
         this.startingHashValue = startingHashValue;
+        this.type = type;
     }
 
     @Override
@@ -88,12 +85,18 @@ public class ECSNode implements IECSNode, Comparable<ECSNode>{
         this.cachesize = cachesize;
     }
 
+    public boolean getNodeType() {
+        return this.type;
+    }
+
     public boolean contains(String hashValue) {
-        if ((startingHashValue.compareTo(endingHashValue) > 0) &&
+        if ((startingHashValue.compareTo(endingHashValue) >= 0) &&
                 ((hashValue.compareTo(startingHashValue) >= 0) ||
                 (hashValue.compareTo(endingHashValue) <= 0))) {
             return true;
-        } else if ((hashValue.compareTo(startingHashValue) >= 0) && (hashValue.compareTo(endingHashValue) <= 0)) {
+        } else if ((startingHashValue.compareTo(endingHashValue) >= 0) &&
+                (hashValue.compareTo(startingHashValue) >= 0) &&
+                (hashValue.compareTo(endingHashValue) <= 0)) {
             return true;
         }
         return false;
