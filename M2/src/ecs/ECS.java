@@ -87,14 +87,18 @@ public class ECS {
             node.setCachesize(cacheSize);
             node.setCacheStrategy(cacheStrategy);
             list.add(node);
+
+            for (int j = 0; j < 2; j++) {
+                ECSNode replica = (ECSNode) avaRepica.pollFirst();
+                replica.setCachesize(cacheSize);
+                replica.setCacheStrategy(cacheStrategy);
+                list.add(replica);
+            }
+
+
         }
 
-        for (int i = 0; i < count * 2; i++) {
-            ECSNode node = (ECSNode) avaRepica.pollFirst();
-            node.setCachesize(cacheSize);
-            node.setCacheStrategy(cacheStrategy);
-            list.add(node);
-        }
+
 
         return list;
     }
@@ -174,8 +178,6 @@ public class ECS {
     public void notifySuccessor(TreeSet<IECSNode> serversTaken) {
 
         HashSet<String> list = new HashSet<>();
-
-
 
         for (IECSNode node : serversTaken) {
 
