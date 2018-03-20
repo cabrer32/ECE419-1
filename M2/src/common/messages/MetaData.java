@@ -282,10 +282,10 @@ public class MetaData implements IMetaData {
 
     public static String MetaToJson(MetaData meta) {
         try {
-            Type metaType = new TypeToken<MetaData>() {
+            Type listType = new TypeToken<TreeSet<ECSNode>>() {
             }.getType();
 
-            return new Gson().toJson(meta, metaType);
+            return  new Gson().toJson(meta.getServerRepo(), listType);
         } catch (JsonSyntaxException e) {
             System.out.println("Invalid Message syntax " + e.getMessage());
         }
@@ -294,13 +294,16 @@ public class MetaData implements IMetaData {
 
     public static MetaData JsonToMeta(String meta) {
         try {
-            Type metaType = new TypeToken<MetaData>() {
+            Type listType = new TypeToken<TreeSet<IECSNode>>() {
             }.getType();
 
-            return new Gson().fromJson(meta, metaType);
+            TreeSet<IECSNode> list = new Gson().fromJson(meta, listType);
+            return new MetaData(list);
+
         } catch (JsonSyntaxException e) {
             System.out.println("Invalid Message syntax " + e.getMessage());
         }
+
         return null;
     }
 }

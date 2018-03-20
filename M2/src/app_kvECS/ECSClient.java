@@ -88,8 +88,9 @@ public class ECSClient implements IECSClient {
 
             if(running) {
                 ecs.startAllNodes();
-                ecs.notifySuccessor((TreeSet<IECSNode>) serversTaken);
             }
+
+            ecs.notifySuccessor((TreeSet<IECSNode>) serversTaken);
 
         } else {
             logger.warn("Not enough servers available for allocation!");
