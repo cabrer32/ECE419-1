@@ -41,10 +41,6 @@ public class KVServerWatcher {
      * Define child path of corresponding ecs node
      */
     private String dataPath = null;
-    /**
-     * Define child path of corresponding ecs node
-     */
-    private String signalPath = null;
 
     /**
      * Watcher to receive meta data
@@ -113,8 +109,7 @@ public class KVServerWatcher {
         this.zkAddress = zkAddress;
         this.KVname = name;
         this.nodePath = ROOT_PATH + "/" + name;
-        this.dataPath = ROOT_PATH + "/data";
-        this.signalPath = ROOT_PATH + "/signal";
+        this.dataPath = ROOT_PATH + "/" + name + "/data";
 
         Logger.getLogger("org.apache.zookeeper").setLevel(Level.ERROR);
 
@@ -363,7 +358,8 @@ public class KVServerWatcher {
 
             createPath(nodePath,"",childrenWatcher);
 
-            createPath(signalPath, "", null);
+            createPath(dataPath,"",dataWatcher);
+
 
         } catch (Exception e) {
             logger.error("Failed to process KVServer Watcher " + e);
@@ -390,7 +386,7 @@ public class KVServerWatcher {
                 logger.error("Cannot move data to "+ successor + " " + e);
             }
 
-            writeData(signalPath,"");
+            writeData(nodePath,"");
 
             kvServer.close();
 
@@ -413,7 +409,7 @@ public class KVServerWatcher {
 
                 }
 
-                writeData(signalPath,"");
+                writeData(nodePath,"");
 
             }else{
                 String coordinator = meta.getCoordinator(KVname);
@@ -424,7 +420,7 @@ public class KVServerWatcher {
                     logger.error("Cannot move data to "+ coordinator + " " + e);
                 }
 
-                writeData(signalPath, "");
+                writeData(nodePath, "");
 
             }
         }

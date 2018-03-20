@@ -2,11 +2,13 @@ package common.messages;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
+import com.google.gson.reflect.TypeToken;
 import ecs.ECSNode;
 import ecs.IECSNode;
 import org.apache.log4j.Logger;
 
 import javax.xml.bind.DatatypeConverter;
+import java.lang.reflect.Type;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
@@ -21,6 +23,8 @@ public class MetaData implements IMetaData {
     }
 
     private void setHashRange() {
+        if (serverRepo.size() == 0)
+            return;
 
         String start = ((ECSNode) serverRepo.last()).getStartingHashValue();
         String end = ((ECSNode) serverRepo.first()).getStartingHashValue();
@@ -45,8 +49,9 @@ public class MetaData implements IMetaData {
 
     @Override
     public String getPredecessor(String name) {
-        Iterator itr = serverRepo.iterator();
-        if (serverRepo.size() == 1) {
+        TreeSet<IECSNode> nodes = getAllCoordinator();
+        Iterator itr = nodes.iterator();
+        if (nodes.size() == 1) {
             return ((IECSNode) itr.next()).getNodeName();
         }
         int idx = 0;
@@ -54,7 +59,7 @@ public class MetaData implements IMetaData {
         while (itr.hasNext()) {
             prevNode = (ECSNode) itr.next();
             if (idx == 0 && prevNode.getNodeName().equals(name)) {
-                return serverRepo.last().getNodeName();
+                return nodes.last().getNodeName();
             }
             if (itr.hasNext()) {
                 curNode = (ECSNode) itr.next();
@@ -69,8 +74,9 @@ public class MetaData implements IMetaData {
 
     @Override
     public String getSuccessor(String name) {
-        Iterator itr = serverRepo.iterator();
-        if (serverRepo.size() == 1) {
+        TreeSet<IECSNode> nodes = getAllCoordinator();
+        Iterator itr = nodes.iterator();
+        if (nodes.size() == 1) {
             return ((IECSNode) itr.next()).getNodeName();
         }
         int idx = 0;
@@ -79,9 +85,9 @@ public class MetaData implements IMetaData {
             node = (ECSNode) itr.next();
             if (node.getNodeName().equals(name)) {
                 if (itr.hasNext()) {
-                    return ((ECSNode) itr.next()).getNodeName();
-                } else if (idx == serverRepo.size() - 1) {
-                    return serverRepo.first().getNodeName();
+                    return ((ECSNode)itr.next()).getNodeName();
+                } else if (idx == nodes.size() - 1) {
+                    return nodes.first().getNodeName();
                 } else {
                     break;
                 }
@@ -89,6 +95,19 @@ public class MetaData implements IMetaData {
             idx++;
         }
         return null;
+    }
+
+    public TreeSet<IECSNode> getAllCoordinator(){
+        TreeSet<IECSNode> coordinators = new TreeSet<>();
+        Iterator itr = serverRepo.iterator();
+        ECSNode node;
+        while (itr.hasNext()) {
+            node = (ECSNode) itr.next();
+            if (node.getNodeType()) {
+                coordinators.add(node);
+            }
+        }
+        return coordinators;
     }
 
     @Override
@@ -236,18 +255,35 @@ public class MetaData implements IMetaData {
 
     @Override
     public IECSNode getNode(String name) {
+        for (IECSNode node : serverRepo) {
+            if (node.getNodeName().equals(name)) {
+                return node;
+            }
+        }
         return null;
     }
 
     @Override
     public IECSNode removeNode(String name) {
+        Iterator iter = serverRepo.iterator();
+        IECSNode node;
+        while (iter.hasNext()) {
+            node = (IECSNode) iter.next();
+            if (node.getNodeName().equals(name)) {
+                iter.remove();
+                return node;
+            }
+        }
         return null;
     }
 
 
     public static String MetaToJson(MetaData meta) {
         try {
-            return new Gson().toJson(meta, MetaData.class);
+            Type metaType = new TypeToken<MetaData>() {
+            }.getType();
+
+            return new Gson().toJson(meta, metaType);
         } catch (JsonSyntaxException e) {
             System.out.println("Invalid Message syntax " + e.getMessage());
         }
@@ -256,7 +292,10 @@ public class MetaData implements IMetaData {
 
     public static MetaData JsonToMeta(String meta) {
         try {
-            return new Gson().fromJson(meta, MetaData.class);
+            Type metaType = new TypeToken<MetaData>() {
+            }.getType();
+
+            return new Gson().fromJson(meta, metaType);
         } catch (JsonSyntaxException e) {
             System.out.println("Invalid Message syntax " + e.getMessage());
         }

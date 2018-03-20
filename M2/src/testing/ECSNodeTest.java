@@ -17,7 +17,7 @@ public class ECSNodeTest extends TestCase {
     public void setUp() {
 
         try {
-            node = new ECSNode("server-test", "127.0.0.1", 50000, "a");
+            node = new ECSNode("server-test", "127.0.0.1", 50000, "a", true);
             node.setEndingHashValue("z");
 
         } catch (Exception e) {

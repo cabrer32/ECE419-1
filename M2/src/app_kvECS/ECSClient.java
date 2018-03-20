@@ -314,7 +314,7 @@ public class ECSClient implements IECSClient {
         // TODO
         try {
             new logger.LogSetup("logs/ecs.log", Level.ALL);
-            if (args.length != 1) {
+            if (args.length != 2) {
                 System.out.println("Error! Invalid number of arguments!");
                 System.out.println("Usage: ECS <configuration file>!");
             } else {

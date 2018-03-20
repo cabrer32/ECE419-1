@@ -20,7 +20,7 @@ public class ECSClientTest extends TestCase {
     @Override
     public void setUp() {
 
-        ecsClient = new ECSClient("ecs.config");
+        ecsClient = new ECSClient("ecs.config","pool.config");
     }
 
     @Override

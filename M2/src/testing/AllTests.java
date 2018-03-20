@@ -20,7 +20,7 @@ public class AllTests {
         try {
             new LogSetup("logs/testing/test.log", Level.ALL);
 
-            ECSClient ecsClient = new ECSClient("ecs.config");
+            ECSClient ecsClient = new ECSClient("ecs.config","pool.config");
 
             ecsClient.addNodes(2, "None", 100);
 
@@ -37,14 +37,14 @@ public class AllTests {
     public static Test suite() {
         TestSuite Suite = new TestSuite("Basic Storage ServerTest-Suite");
 
-        Suite.addTestSuite(ConnectionTest.class);
-        Suite.addTestSuite(KVStoreTest.class);
-        Suite.addTestSuite(KVServerTest.class);
-        Suite.addTestSuite(ECSNodeTest.class);
-        Suite.addTestSuite(ECSClientTest.class);
-        Suite.addTestSuite(CacheTest.class);
-        Suite.addTestSuite(PerformanceTest.class);
-
+//        Suite.addTestSuite(ConnectionTest.class);
+//        Suite.addTestSuite(KVStoreTest.class);
+//        Suite.addTestSuite(KVServerTest.class);
+//        Suite.addTestSuite(ECSNodeTest.class);
+//        Suite.addTestSuite(ECSClientTest.class);
+//        Suite.addTestSuite(CacheTest.class);
+//        Suite.addTestSuite(PerformanceTest.class);
+//
 
 
         return Suite;

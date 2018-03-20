@@ -71,6 +71,10 @@ public class ECSWatcher {
                             exists(ROOT_PATH, this);
                             break;
                         case NodeChildrenChanged:
+//                            if (awaitSemaphore == null) {
+//                                logger.info("Change is not related");
+//                                break;
+//                            }
                             logger.info("Children Node Changed");
 
                             awaitSemaphore.countDown();
@@ -97,7 +101,7 @@ public class ECSWatcher {
 
             connectedSemaphore.await();
 
-            createPath(ROOT_PATH,"",rootWatcher);
+            createPath(ROOT_PATH,"", rootWatcher);
 
         }catch (Exception e) {
             logger.error("Failed to process KVServer Watcher " + e);
@@ -178,7 +182,7 @@ public class ECSWatcher {
     public void setSemaphore(int count) {
         try {
             zk.getChildren(ROOT_PATH, rootWatcher);
-            connectedSemaphore = new CountDownLatch(count);
+            awaitSemaphore = new CountDownLatch(count);
         }catch (Exception e){
             logger.error("Cannot watch children");
         }
@@ -208,6 +212,7 @@ public class ECSWatcher {
         }
 
         for (IECSNode node : serverRepoTaken) {
+            ifAllSuccess = ifAllSuccess && this.deleteNode(CHILDREN_PATH + node.getNodeName() + "/data");
             ifAllSuccess = ifAllSuccess && this.deleteNode(CHILDREN_PATH + node.getNodeName());
         }
 
