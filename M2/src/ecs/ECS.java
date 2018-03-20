@@ -173,6 +173,9 @@ public class ECS {
 
     public void notifySuccessor(TreeSet<IECSNode> serversTaken) {
 
+        if (serversTaken.size()  == meta.getServerRepo().size())
+            return;
+
         HashSet<String> list = new HashSet<>();
 
         for (IECSNode node : serversTaken) {
@@ -188,7 +191,6 @@ public class ECS {
             System.out.println(successor);
 
             list.add(successor);
-
 
         }
         notifyNodes(list);
