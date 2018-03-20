@@ -13,6 +13,9 @@ public class ECSNode implements IECSNode, Comparable<ECSNode>{
     private int port;
     private boolean type;
 
+
+    public ECSNode (){}
+
     public ECSNode(String name, String host, int port, String startingHashValue, boolean type) {
         this.name = name;
         this.host = host;
