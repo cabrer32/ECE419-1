@@ -294,7 +294,7 @@ public class MetaData implements IMetaData {
 
     public static MetaData JsonToMeta(String meta) {
         try {
-            Type listType = new TypeToken<TreeSet<IECSNode>>() {
+            Type listType = new TypeToken<TreeSet<ECSNode>>() {
             }.getType();
 
             TreeSet<IECSNode> list = new Gson().fromJson(meta, listType);
