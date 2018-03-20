@@ -176,7 +176,9 @@ public class KVServerWatcher {
             this.zk.exists(path, watcher);
         } catch (Exception e) {
             logger.error("Failed to create new node " + path);
+
             logger.error(e);
+
         }
     }
 
@@ -216,7 +218,7 @@ public class KVServerWatcher {
                             connectedSemaphore.countDown();
                             break;
                         case NodeDataChanged:
-                            logger.info("Node Changed");
+                            logger.info("Root Changed");
 
                             String data = readData(ROOT_PATH, this);
 
@@ -261,7 +263,16 @@ public class KVServerWatcher {
                         case NodeDataChanged:
                             logger.info("Node is changed.");
                             String data = readData(nodePath, this);
+
+                            if(data.equals("")){
+                                logger.info("Change is not related");
+                                return;
+                            }
+
                             updateServer(MetaData.JsonToMeta(data));
+                            break;
+                        case NodeDeleted:
+                            kvServer.close();
                             break;
                         default:
                             logger.info("Change is not related");
@@ -358,8 +369,11 @@ public class KVServerWatcher {
 
             createPath(nodePath,"",childrenWatcher);
 
+            exists(nodePath,childrenWatcher);
+
             createPath(dataPath,"",dataWatcher);
 
+            exists(dataPath,dataWatcher);
 
         } catch (Exception e) {
             logger.error("Failed to process KVServer Watcher " + e);
@@ -397,7 +411,7 @@ public class KVServerWatcher {
             if(meta.isCoordinator(KVname)){
                 MetaData oldMeta = kvServer.getMetaData();
 
-                ArrayList<IECSNode> targets = meta.getServerBetween(oldMeta.getSuccessor(KVname), KVname);
+                ArrayList<IECSNode> targets = meta.getServerBetween(oldMeta.getPredecessor(KVname), KVname);
 
                 for(IECSNode node:targets){
 

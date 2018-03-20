@@ -84,11 +84,11 @@ public class ECSClient implements IECSClient {
                 logger.error(e.getMessage());
             }
 
-            ecs.addMeta((TreeSet<IECSNode>) serversTaken);
-
             if(running) {
                 ecs.startAllNodes();
             }
+
+            ecs.addMeta((TreeSet<IECSNode>) serversTaken);
 
             ecs.notifySuccessor((TreeSet<IECSNode>) serversTaken);
 

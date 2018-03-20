@@ -113,4 +113,9 @@ public class ECSNode implements IECSNode, Comparable<ECSNode>{
         }
         return this.getStartingHashValue().compareTo(o.getStartingHashValue());
     }
+
+    public int compareHash(ECSNode o)
+    {
+        return this.getStartingHashValue().compareTo(o.getStartingHashValue());
+    }
 }

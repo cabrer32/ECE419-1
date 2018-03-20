@@ -213,46 +213,31 @@ public class MetaData implements IMetaData {
 
     @Override
     public ArrayList<IECSNode> getServerBetween(String predecessor, String successor) {
+
+        ECSNode suc = (ECSNode) this.getNode(successor);
+
+        ECSNode pre = (ECSNode) this.getNode(predecessor);
+
+        int flag = suc.compareHash(pre) ;
+
+        if(flag == 0)
+            return null;
+
         ArrayList<IECSNode> nodes = new ArrayList<>();
-        if (predecessor.equals(successor)) {
-            return nodes;
-        }
-        ECSNode node;
+
         Iterator itr = serverRepo.iterator();
-        if (getHashRange(predecessor)[0].compareTo(getHashRange(successor)[0]) < 0) {
-            while (itr.hasNext()) {
-                node = (ECSNode) itr.next();
-                if (node.getNodeName().equals(predecessor)) {
-                    break;
-                }
-            }
-            while (itr.hasNext()) {
-                node = (ECSNode) itr.next();
-                if (!node.getNodeName().equals(successor)) {
-                    nodes.add(node);
-                } else {
-                    break;
-                }
-            }
-            return nodes;
-        } else {
-            while (itr.hasNext()) {
-                node = (ECSNode) itr.next();
-                if (!node.getNodeName().equals(predecessor)) {
-                    nodes.add(node);
-                }
-            }
-            while (itr.hasNext()) {
-                if (((ECSNode) itr.next()).getNodeName().equals(successor)) {
-                    break;
-                }
-            }
-            while (itr.hasNext()) {
-                node = (ECSNode) itr.next();
+
+        while(itr.hasNext()){
+
+            ECSNode node =  (ECSNode) itr.next();
+
+            if(((flag > 0) && (node.compareHash(pre) > 0) && (node.compareHash(suc) < 0))  ||
+                    (((flag < 0) && (node.compareHash(pre) > 0) || (node.compareHash(suc) < 0))  )){
                 nodes.add(node);
             }
-            return nodes;
         }
+
+        return nodes;
     }
 
     @Override
