@@ -92,14 +92,10 @@ public class ECS {
                 ECSNode replica = (ECSNode) avaRepica.pollFirst();
                 replica.setCachesize(cacheSize);
                 replica.setCacheStrategy(cacheStrategy);
+                replica.setStartingHashValue(node.getStartingHashValue());
                 list.add(replica);
             }
-
-
         }
-
-
-
         return list;
     }
 
@@ -140,12 +136,12 @@ public class ECS {
     public boolean removeNodes(Collection<String> nodeNames) {
 
         for (String nodeName : nodeNames) {
-            String coordinator = meta.getCoordinator(nodeName);
-            ArrayList<String> replica = meta.getReplica(nodeName);
+            IECSNode coordinator = meta.getCoordinator(nodeName);
+            TreeSet<IECSNode> replica = meta.getReplica(nodeName);
 
-            avaServer.add(meta.removeNode(coordinator));
-            for (String node : replica)
-                avaRepica.add(meta.removeNode(node));
+            avaServer.add(meta.removeNode(coordinator.getNodeName()));
+            for (IECSNode node : replica)
+                avaRepica.add(meta.removeNode(node.getNodeName()));
 
         }
 

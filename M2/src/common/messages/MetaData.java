@@ -3,9 +3,9 @@ package common.messages;
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 import com.google.gson.reflect.TypeToken;
+import ecs.ECS;
 import ecs.ECSNode;
 import ecs.IECSNode;
-import org.apache.log4j.Logger;
 
 import javax.xml.bind.DatatypeConverter;
 import java.lang.reflect.Type;
@@ -23,23 +23,25 @@ public class MetaData implements IMetaData {
     }
 
     private void setHashRange() {
-        if (serverRepo.size() == 0)
+        TreeSet<IECSNode> coordinators = getAllCoordinator();
+        if (coordinators.size() == 0)
             return;
-
-        String start = ((ECSNode) serverRepo.last()).getStartingHashValue();
-        String end = ((ECSNode) serverRepo.first()).getStartingHashValue();
-        ((ECSNode) serverRepo.last()).setEndingHashValue(((ECSNode) serverRepo.first()).getStartingHashValue());
-        Iterator itr = serverRepo.iterator();
+        ((ECSNode) coordinators.last()).setEndingHashValue(((ECSNode) coordinators.first()).getStartingHashValue());
+        Iterator itr = coordinators.iterator();
+        TreeSet<IECSNode> replicas;
         ECSNode currentNode, nextNode;
         if (itr.hasNext()) {
             currentNode = (ECSNode) itr.next();
+            replicas = getReplica(currentNode.getNodeName());
             while (itr.hasNext()) {
                 nextNode = (ECSNode) itr.next();
                 currentNode.setEndingHashValue(nextNode.getStartingHashValue());
+                for (IECSNode replica : replicas) {
+                    ((ECSNode)replica).setEndingHashValue(nextNode.getStartingHashValue());
+                }
                 currentNode = nextNode;
             }
         }
-
     }
 
     public TreeSet<IECSNode> getServerRepo() {
@@ -141,8 +143,8 @@ public class MetaData implements IMetaData {
     }
 
     @Override
-    public ArrayList<String> getReplica(String name) {
-        ArrayList<String> nodes = new ArrayList<>();
+    public TreeSet<IECSNode> getReplica(String name) {
+        TreeSet<IECSNode> nodes = new TreeSet<>();
         String startingHashValue = null;
         for (IECSNode node : serverRepo) {
             if (node.getNodeName().equals(name) && ((ECSNode) node).getNodeType()) {
@@ -152,7 +154,7 @@ public class MetaData implements IMetaData {
         if (startingHashValue != null) {
             for (IECSNode node : serverRepo) {
                 if (((ECSNode) node).getStartingHashValue().equals(startingHashValue) && !((ECSNode) node).getNodeType()) {
-                    nodes.add(node.getNodeName());
+                    nodes.add(node);
                 }
             }
         }
@@ -160,8 +162,8 @@ public class MetaData implements IMetaData {
     }
 
     @Override
-    public String getCoordinator(String name) {
-        String CoordinatorName = null;
+    public IECSNode getCoordinator(String name) {
+        IECSNode coordinator = null;
         String startingHashValue = null;
         for (IECSNode node : serverRepo) {
             if (node.getNodeName().equals(name) && !((ECSNode) node).getNodeType()) {
@@ -171,11 +173,11 @@ public class MetaData implements IMetaData {
         if (startingHashValue != null) {
             for (IECSNode node : serverRepo) {
                 if (((ECSNode) node).getStartingHashValue().equals(startingHashValue) && ((ECSNode) node).getNodeType()) {
-                    CoordinatorName = node.getNodeName();
+                    coordinator = node;
                 }
             }
         }
-        return CoordinatorName;
+        return coordinator;
     }
 
     @Override

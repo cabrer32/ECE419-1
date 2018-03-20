@@ -412,7 +412,7 @@ public class KVServerWatcher {
                 writeData(nodePath,"");
 
             }else{
-                String coordinator = meta.getCoordinator(KVname);
+                String coordinator = meta.getCoordinator(KVname).getNodeName();
 
                 try{
                     kvServer.moveData(meta.getHashRange(KVname), coordinator);
