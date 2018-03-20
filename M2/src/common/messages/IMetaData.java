@@ -3,13 +3,14 @@ package common.messages;
 import ecs.IECSNode;
 
 import java.util.ArrayList;
+import java.util.TreeSet;
 
 public interface IMetaData {
     public String getPredecessor(String name);
     public String getSuccessor(String name);
     public IECSNode getServerByKey(String key, boolean write);
-    public ArrayList<String> getReplica(String name);
-    public String getCoordinator(String name);
+    public TreeSet<IECSNode> getReplica(String name);
+    public IECSNode getCoordinator(String name);
     public boolean hasServer(String name);
     public boolean isCoordinator(String name);
     public String[] getHashRange(String name);

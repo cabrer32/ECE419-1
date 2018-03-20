@@ -1,10 +1,8 @@
 package ecs;
 
-import com.google.gson.Gson;
 import common.messages.MetaData;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
-
 import javax.xml.bind.DatatypeConverter;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -16,7 +14,7 @@ import java.util.*;
 public class ECS {
     private static Logger logger = Logger.getRootLogger();
     //private static final String SCRIPT_TEXT = "ssh -n %s nohup java -jar /m2-server.jar %s %s %s %s %s %s &";
-    private static final String SCRIPT_TEXT = "ssh -n %s nohup java -jar /Users/wuqili/Desktop/ECE419/M2/m2-server.jar %s %s %s %s %s %s &";
+    private static final String SCRIPT_TEXT = "ssh -n %s nohup java -jar /Users/pannnnn/UTcourses/ECE419/Milestones/ece419/M2/m2-server.jar %s %s %s %s %s %s &";
 
     private ECSWatcher zkWatch;
 
@@ -81,21 +79,19 @@ public class ECS {
 
         TreeSet<IECSNode> list = new TreeSet<>();
 
-
         for (int i = 0; i < count; i++) {
             ECSNode node = (ECSNode) avaServer.pollFirst();
             node.setCachesize(cacheSize);
             node.setCacheStrategy(cacheStrategy);
             list.add(node);
+            for (int j = 0; j < 2; j++) {
+                ECSNode replica = (ECSNode) avaRepica.pollFirst();
+                replica.setStartingHashValue(node.getStartingHashValue());
+                replica.setCachesize(cacheSize);
+                replica.setCacheStrategy(cacheStrategy);
+                list.add(replica);
+            }
         }
-
-        for (int i = 0; i < count * 2; i++) {
-            ECSNode node = (ECSNode) avaRepica.pollFirst();
-            node.setCachesize(cacheSize);
-            node.setCacheStrategy(cacheStrategy);
-            list.add(node);
-        }
-
         return list;
     }
 
@@ -136,13 +132,13 @@ public class ECS {
     public boolean removeNodes(Collection<String> nodeNames) {
 
         for (String nodeName : nodeNames) {
-            String coordinator = meta.getCoordinator(nodeName);
-            ArrayList<String> replica = meta.getReplica(nodeName);
 
-            avaServer.add(meta.removeNode(coordinator));
-            for (String node : replica)
-                avaRepica.add(meta.removeNode(node));
+            IECSNode coordinator = meta.getCoordinator(nodeName);
+            TreeSet<IECSNode> replica = meta.getReplica(nodeName);
 
+            avaServer.add(meta.removeNode(coordinator.getNodeName()));
+            for (IECSNode node : replica)
+                avaRepica.add(meta.removeNode(node.getNodeName()));
         }
 
         return true;
@@ -175,8 +171,6 @@ public class ECS {
 
         HashSet<String> list = new HashSet<>();
 
-
-
         for (IECSNode node : serversTaken) {
 
             if (!((ECSNode) node).getNodeType())
@@ -190,8 +184,6 @@ public class ECS {
             System.out.println(successor);
 
             list.add(successor);
-
-
         }
         notifyNodes(list);
     }
