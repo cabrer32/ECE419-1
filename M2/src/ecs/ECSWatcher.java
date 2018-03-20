@@ -193,7 +193,7 @@ public class ECSWatcher {
         boolean ifNotTimeout = true;
 
         try {
-            ifNotTimeout = connectedSemaphore.await(timeout, TimeUnit.MILLISECONDS);
+            ifNotTimeout = awaitSemaphore.await(timeout, TimeUnit.MILLISECONDS);
             logger.info("Finish waiting nodes " + ifNotTimeout);
         } catch (InterruptedException e) {
             logger.error("Await Nodes has been interrupted!");

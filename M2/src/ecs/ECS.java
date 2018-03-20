@@ -110,7 +110,7 @@ public class ECS {
 
     public void initServers(TreeSet<IECSNode> list) {
 
-        zkWatch.setSemaphore(list.size() * 2);
+        zkWatch.setSemaphore(list.size());
 
         for (Iterator<IECSNode> iterator = list.iterator(); iterator.hasNext(); ) {
             ECSNode node = (ECSNode) iterator.next();
@@ -187,8 +187,6 @@ public class ECS {
 
             while (serversTaken.contains(meta.getNode(successor)))
                 successor = meta.getSuccessor(successor);
-
-            System.out.println(successor);
 
             list.add(successor);
 

@@ -211,9 +211,9 @@ public class KVServerWatcher {
                 if (keeperState == KeeperState.SyncConnected) {
                     switch (eventType) {
                         case None:
-                            connectedSemaphore.countDown();
                             logger.info("Successfully connected to zookeeper server");
                             exists(ROOT_PATH, this);
+                            connectedSemaphore.countDown();
                             break;
                         case NodeDataChanged:
                             logger.info("Node Changed");
