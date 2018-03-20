@@ -48,6 +48,7 @@ public class ECSWatcher {
     /** root watcher*/
     private Watcher rootWatcher = null;
 
+    private Watcher childrenWatcher = null;
 
 
     public void init() {
@@ -70,22 +71,15 @@ public class ECSWatcher {
                             logger.info("Successfully connected to zookeeper server");
                             exists(ROOT_PATH, this);
                             break;
+
                         case NodeChildrenChanged:
-//                            if (awaitSemaphore == null) {
-//                                logger.info("Change is not related");
-//                                break;
-//                            }
-                            logger.info("Children Node Changed");
-
-                            awaitSemaphore.countDown();
-
                             try {
                                 zk.getChildren(ROOT_PATH, this);
-                            } catch (Exception e) {
-                                logger.error("cannot watch on children nodes");
+                            }catch (Exception e){
+                                logger.error("cannot watcher children");
                             }
-
-                            break;
+                            logger.info("Children Node Changed");
+                            awaitSemaphore.countDown();
                         default:
                             logger.info("Change is not related");
                             break;
@@ -93,6 +87,38 @@ public class ECSWatcher {
 
                 } else {
                     logger.warn("Failed to connect with zookeeper server -> root node");
+                }
+            }
+        };
+
+        childrenWatcher = new Watcher() {
+            @Override
+            public void process(WatchedEvent event) {
+                if (event == null) return;
+
+
+                KeeperState keeperState = event.getState();
+
+                EventType eventType = event.getType();
+
+                logger.info("Children watcher triggered " + event.toString());
+
+                if (keeperState == KeeperState.SyncConnected) {
+                    switch (eventType) {
+
+                        case NodeDataChanged:
+                            logger.info("Children Node Changed");
+                            awaitSemaphore.countDown();
+
+                            break;
+
+                        default:
+                            logger.info("Change is not related");
+                            break;
+                    }
+
+                } else {
+                    logger.warn("Failed to connect with zookeeper server -> children node");
                 }
             }
         };
@@ -179,9 +205,15 @@ public class ECSWatcher {
     }
 
 
-    public void setSemaphore(int count) {
+    public void setSemaphore(int count, TreeSet<IECSNode> list) {
         try {
+
             zk.getChildren(ROOT_PATH, rootWatcher);
+
+            for(IECSNode node : list){
+                exists(CHILDREN_PATH + node.getNodeName(), childrenWatcher);
+            }
+
             awaitSemaphore = new CountDownLatch(count);
         }catch (Exception e){
             logger.error("Cannot watch children");
@@ -200,6 +232,7 @@ public class ECSWatcher {
         }
         return ifNotTimeout;
     }
+
 
     public boolean deleteAllNodes(TreeSet<IECSNode> serverRepoTaken) {
         boolean ifAllSuccess = true;

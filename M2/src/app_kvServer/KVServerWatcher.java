@@ -121,7 +121,7 @@ public class KVServerWatcher {
      */
     public Stat exists(String path, Watcher watcher) {
         try {
-            return this.zk.exists(path, true);
+            return this.zk.exists(path, watcher);
         } catch (Exception e) {
             logger.error("Cannot check path " + path + "   " + e);
             return null;
@@ -368,18 +368,17 @@ public class KVServerWatcher {
             connectedSemaphore.await();
 
             createPath(nodePath,"",childrenWatcher);
-
-            exists(nodePath,childrenWatcher);
-
             createPath(dataPath,"",dataWatcher);
-
-            exists(dataPath,dataWatcher);
 
         } catch (Exception e) {
             logger.error("Failed to process KVServer Watcher " + e);
         }
     }
 
+
+    void signalECS(){
+        writeData(nodePath,"");
+    }
 
     void updateServer(MetaData meta) {
 
@@ -400,7 +399,7 @@ public class KVServerWatcher {
                 logger.error("Cannot move data to "+ successor + " " + e);
             }
 
-            writeData(nodePath,"");
+            signalECS();
 
             kvServer.close();
 
@@ -423,7 +422,7 @@ public class KVServerWatcher {
 
                 }
 
-                writeData(nodePath,"");
+
 
             }else{
                 String coordinator = meta.getCoordinator(KVname).getNodeName();
@@ -434,12 +433,14 @@ public class KVServerWatcher {
                     logger.error("Cannot move data to "+ coordinator + " " + e);
                 }
 
-                writeData(nodePath, "");
 
             }
         }
 
+        signalECS();
     }
+
+
 
 
 

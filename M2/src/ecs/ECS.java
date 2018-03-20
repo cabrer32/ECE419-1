@@ -111,7 +111,7 @@ public class ECS {
 
     public void initServers(TreeSet<IECSNode> list) {
 
-        zkWatch.setSemaphore(list.size());
+        zkWatch.setSemaphore(list.size(), meta.getServerRepo());
 
         for (Iterator<IECSNode> iterator = list.iterator(); iterator.hasNext(); ) {
             ECSNode node = (ECSNode) iterator.next();
@@ -180,7 +180,7 @@ public class ECS {
         if (serversTaken.size()  == meta.getServerRepo().size())
             return;
 
-        HashSet<String> list = new HashSet<>();
+        Set<String> list = new HashSet<>();
 
         for (IECSNode node : serversTaken) {
 
@@ -196,10 +196,10 @@ public class ECS {
 
         }
 
-        zkWatch.setSemaphore(list.size());
+        zkWatch.setSemaphore(list.size(), meta.getServerRepo());
 
         notifyNodes(list);
 
-        awaitNodes(5000);
+        awaitNodes(1000000000);
     }
 }
