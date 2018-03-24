@@ -16,12 +16,8 @@ public class ECSClientTest extends TestCase {
 
     @BeforeClass
     public void setUp() {
-<<<<<<< Updated upstream
 
         ecsClient = new ECSClient("127.0.0.1",2181,"ecs.config");
-=======
-        ecsClient = new ECSClient("ecs.config","pool.config");
->>>>>>> Stashed changes
     }
 
     @AfterClass
