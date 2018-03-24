@@ -26,6 +26,13 @@ public class AllTests {
 //        }finally {
 //            System.out.println("final");
 //        }
+    static {
+        try {
+            new LogSetup("logs/testing/test.log", Level.ALL);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 
     public static Test suite() {
         TestSuite Suite = new TestSuite("Basic Storage ServerTest-Suite");
@@ -40,12 +47,6 @@ public class AllTests {
 //        Suite.addTestSuite(PerformanceTest.class);
 //
 
-
         return Suite;
     }
-
-
-
-
-
 }
