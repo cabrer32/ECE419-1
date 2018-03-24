@@ -3,7 +3,6 @@ package common.messages;
 import ecs.IECSNode;
 
 import java.util.ArrayList;
-import java.util.TreeSet;
 
 public interface IMetaData {
     String getPredecessor(String name);

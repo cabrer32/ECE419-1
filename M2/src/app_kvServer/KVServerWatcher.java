@@ -195,6 +195,18 @@ public class KVServerWatcher {
         }
     }
 
+    public void releaseConnection() {
+        if (this.zk != null) {
+            try {
+                this.zk.close();
+                logger.info("Successfully closed zookeeper connection ");
+            } catch (InterruptedException e) {
+                logger.info("Failed closed zookeeper connection ");
+                e.printStackTrace();
+            }
+        }
+    }
+
     public void init() {
 
         connectionWatcher = new Watcher() {
@@ -438,12 +450,11 @@ public class KVServerWatcher {
                 }
             }
 
-
             signalECS();
         }
-
-
     }
+
+
 
 
     void moveData(Map<String, String> map, String targetName) {

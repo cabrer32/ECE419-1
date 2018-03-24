@@ -96,7 +96,7 @@ public class MetaData implements IMetaData {
 
         ECSNode pre = (ECSNode) this.getNode(predecessor);
 
-        int flag = suc.compareHash(pre);
+        int flag = suc.compareTo(pre);
 
         if (flag == 0)
             return null;
@@ -109,8 +109,8 @@ public class MetaData implements IMetaData {
 
             ECSNode node = (ECSNode) itr.next();
 
-            if (((flag > 0) && (node.compareHash(pre) > 0) && (node.compareHash(suc) < 0)) ||
-                    (((flag < 0) && (node.compareHash(pre) > 0) || (node.compareHash(suc) < 0)))) {
+            if (((flag > 0) && (node.compareTo(pre) > 0) && (node.compareTo(suc) < 0)) ||
+                    (((flag < 0) && (node.compareTo(pre) > 0) || (node.compareTo(suc) < 0)))) {
                 nodes.add(node);
             }
         }

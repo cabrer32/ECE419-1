@@ -85,7 +85,12 @@ public class ECS {
 
     public void initServers(TreeSet<IECSNode> list) {
 
-        zkWatch.setSemaphore(list.size(), null);
+        Set<String> names = new HashSet<>();
+
+        for(IECSNode node : list)
+            names.add(node.getNodeName());
+
+        zkWatch.setSemaphore(list.size(), names);
 
         for (Iterator<IECSNode> iterator = list.iterator(); iterator.hasNext(); ) {
             ECSNode node = (ECSNode) iterator.next();
@@ -198,10 +203,7 @@ public class ECS {
             zkWatch.writeData(CHILDREN_PATH_SUFFIX + name, MetaData.MetaToJson(meta));
         }
 
-
         awaitNodes(100000000);
-
-        logger.info("Finish rearranging new nodes.");
     }
 
     public boolean awaitNodes(int timeout) {
@@ -213,6 +215,8 @@ public class ECS {
     }
 
     public boolean shutdown() {
-        return zkWatch.deleteAllNodes(meta.getServerRepo());
+        boolean flag = zkWatch.deleteAllNodes(meta.getServerRepo());
+        zkWatch.releaseConnection();
+        return flag;
     }
 }

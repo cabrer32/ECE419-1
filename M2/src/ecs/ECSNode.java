@@ -107,14 +107,6 @@ public class ECSNode implements IECSNode, Comparable<ECSNode>{
     @Override
     public int compareTo(ECSNode o)
     {
-        if(this.getStartingHashValue().compareTo(o.getStartingHashValue()) == 0){
-            return this.getNodeName().compareTo(o.getNodeName());
-        }
-        return this.getStartingHashValue().compareTo(o.getStartingHashValue());
-    }
-
-    public int compareHash(ECSNode o)
-    {
         return this.getStartingHashValue().compareTo(o.getStartingHashValue());
     }
 }

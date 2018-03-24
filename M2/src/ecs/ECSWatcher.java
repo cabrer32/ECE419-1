@@ -75,16 +75,6 @@ public class ECSWatcher {
                             exists(ROOT_PATH, this);
                             break;
 
-                        case NodeChildrenChanged:
-                            try {
-                                zk.getChildren(ROOT_PATH, this);
-                            } catch (Exception e) {
-                                logger.error("cannot watcher children");
-                            }
-
-                            logger.info("Children Node Changed");
-                            awaitSemaphore.countDown();
-                            break;
                         default:
                             logger.info("Change is not related");
                             break;
@@ -110,7 +100,10 @@ public class ECSWatcher {
 
                 if (keeperState == KeeperState.SyncConnected) {
                     switch (eventType) {
-
+                        case NodeCreated:
+                            logger.info("Children Node Changed");
+                            awaitSemaphore.countDown();
+                            break;
                         case NodeDataChanged:
                             logger.info("Children Node Changed");
                             awaitSemaphore.countDown();
@@ -198,16 +191,23 @@ public class ECSWatcher {
         }
     }
 
+    public void releaseConnection() {
+        if (this.zk != null) {
+            try {
+                this.zk.close();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
 
     public void setSemaphore(int count, Collection<String> list) {
         try {
 
-            zk.getChildren(ROOT_PATH, rootWatcher);
-
-            if (list != null)
-                for (String node : list) {
-                    exists(CHILDREN_PATH + node, childrenWatcher);
-                }
+            for (String node : list) {
+                exists(CHILDREN_PATH + node, childrenWatcher);
+            }
 
             awaitSemaphore = new CountDownLatch(count);
         } catch (Exception e) {
@@ -221,7 +221,7 @@ public class ECSWatcher {
 
         try {
             ifNotTimeout = awaitSemaphore.await(timeout, TimeUnit.MILLISECONDS);
-            logger.info("Finish waiting nodes status is " + ifNotTimeout);
+            logger.info("Servers finished their work with status " + ifNotTimeout);
         } catch (InterruptedException e) {
             logger.error("Await Nodes has been interrupted!");
         }
@@ -234,7 +234,7 @@ public class ECSWatcher {
         logger.info("Deleting all nodes");
 
         try {
-            if(this.zk.exists(ROOT_PATH, false) == null)
+            if (this.zk.exists(ROOT_PATH, false) == null)
                 return true;
 
             for (IECSNode node : serverRepoTaken) {
@@ -246,6 +246,7 @@ public class ECSWatcher {
 
             logger.info("Done");
 
+            zk.close();
             return true;
         } catch (Exception e) {
             logger.error("Cannot Do ZK operation");
