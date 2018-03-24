@@ -65,7 +65,7 @@ public class ECSWatcher {
 
                 EventType eventType = event.getType();
 
-                logger.info("ROOT watcher triggered " + event.toString());
+                logger.debug("ROOT watcher triggered " + event.toString());
 
                 if (keeperState == KeeperState.SyncConnected) {
                     switch (eventType) {
@@ -74,9 +74,7 @@ public class ECSWatcher {
                             logger.info("Successfully connected to zookeeper server");
                             exists(ROOT_PATH, this);
                             break;
-
                         default:
-                            logger.info("Change is not related");
                             break;
                     }
 
@@ -96,21 +94,22 @@ public class ECSWatcher {
 
                 EventType eventType = event.getType();
 
-                logger.info("Children watcher triggered " + event.toString());
+                String path = event.getPath();
+
+                logger.debug("Children watcher triggered " + event.toString());
 
                 if (keeperState == KeeperState.SyncConnected) {
                     switch (eventType) {
                         case NodeCreated:
-                            logger.info("Children Node Changed");
+                            logger.info("Children Node Created at " + path);
                             awaitSemaphore.countDown();
                             break;
                         case NodeDataChanged:
-                            logger.info("Children Node Changed");
+                            logger.info("Children Node signal received at " + path);
                             awaitSemaphore.countDown();
                             break;
 
                         default:
-                            logger.info("Change is not related");
                             break;
                     }
 
@@ -124,7 +123,7 @@ public class ECSWatcher {
 
             connectedSemaphore.await();
 
-            createPath(ROOT_PATH, "", rootWatcher);
+            createPath(ROOT_PATH, "");
 
         } catch (Exception e) {
             logger.error("Failed to process KVServer Watcher " + e);
@@ -136,10 +135,10 @@ public class ECSWatcher {
      * Create node with path
      */
 
-    public void createPath(String path, String data, Watcher watcher) {
+    public void createPath(String path, String data) {
         try {
             this.zk.create(path, data.getBytes(), Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
-            logger.info("Successfully create new node " + path);
+            logger.debug("Successfully create new node " + path);
         } catch (Exception e) {
             logger.error("Failed to create new node " + path);
         }
@@ -152,7 +151,7 @@ public class ECSWatcher {
     public boolean writeData(String path, String data) {
         try {
             this.zk.setData(path, data.getBytes(), -1);
-            logger.info("Successfully update Node at " + path);
+            logger.debug("Successfully update Node at " + path);
         } catch (Exception e) {
             logger.error("Failed to update Node at " + path);
             logger.error(e);
@@ -202,17 +201,18 @@ public class ECSWatcher {
     }
 
 
-    public void setSemaphore(int count, Collection<String> list) {
+    public void setSemaphore(int count) {
         try {
-
-            for (String node : list) {
-                exists(CHILDREN_PATH + node, childrenWatcher);
-            }
-
             awaitSemaphore = new CountDownLatch(count);
         } catch (Exception e) {
             logger.error("Cannot watch children");
         }
+    }
+
+    public void watchNewNode(String name) {
+
+        exists(CHILDREN_PATH + name, childrenWatcher);
+
     }
 
     public boolean awaitNodes(int timeout) {
@@ -221,7 +221,11 @@ public class ECSWatcher {
 
         try {
             ifNotTimeout = awaitSemaphore.await(timeout, TimeUnit.MILLISECONDS);
-            logger.info("Servers finished their work with status " + ifNotTimeout);
+            if(ifNotTimeout)
+                logger.info("All Server Signal received.");
+            else
+                logger.info("Timeout while waiting Server Signal.");
+
         } catch (InterruptedException e) {
             logger.error("Await Nodes has been interrupted!");
         }
@@ -245,8 +249,6 @@ public class ECSWatcher {
             deleteNode(ROOT_PATH);
 
             logger.info("Done");
-
-            zk.close();
             return true;
         } catch (Exception e) {
             logger.error("Cannot Do ZK operation");

@@ -37,10 +37,6 @@ public class KVServerWatcher {
      * Define child path of corresponding ecs node
      */
     private String nodePath = null;
-    /**
-     * Define child path of corresponding ecs node
-     */
-    private String dataPath = null;
 
     /**
      * Watcher to receive meta data
@@ -51,11 +47,6 @@ public class KVServerWatcher {
      * Watcher to get server operations
      */
     private Watcher childrenWatcher = null;
-
-    /**
-     * Watcher to get transfer data
-     */
-    private Watcher dataWatcher = null;
 
     /**
      * Watcher to get transfer data
@@ -109,7 +100,6 @@ public class KVServerWatcher {
         this.zkAddress = zkAddress;
         this.KVname = name;
         this.nodePath = ROOT_PATH + "/" + name;
-        this.dataPath = ROOT_PATH + "/" + name + "/data";
 
         Logger.getLogger("org.apache.zookeeper").setLevel(Level.ERROR);
 
@@ -134,7 +124,7 @@ public class KVServerWatcher {
     public String readData(String path, Watcher watcher) {
         try {
             String data = new String(this.zk.getData(path, watcher, null));
-            logger.info("Successfully read Node from " + path);
+            logger.debug("Successfully read Node from " + path);
             return data;
         } catch (Exception e) {
             logger.error("Failed to read Node from " + path);
@@ -149,7 +139,7 @@ public class KVServerWatcher {
     public boolean writeData(String path, String data) {
         try {
             this.zk.setData(path, data.getBytes(), -1);
-            logger.info("Successfully update Node at " + path);
+            logger.debug("Successfully update Node at " + path);
         } catch (Exception e) {
             logger.error("Failed to update Node at " + path);
             logger.error(e);
@@ -162,23 +152,13 @@ public class KVServerWatcher {
      * Create node with path
      */
 
-    public void createPath(String path, String data, Watcher watcher) {
+    public void createPath(String path, String data) {
         try {
-            logger.info("Creating node at " + path);
-            Stat stat = this.zk.exists(path, null);
-
-            if (stat != null) {
-                logger.info("node at path " + path + " already exists");
-                deleteNode(path);
-            }
+            logger.debug("Creating node at " + path);
             this.zk.create(path, data.getBytes(), Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
-            logger.info("Successfully create new node " + path);
-            this.zk.exists(path, watcher);
         } catch (Exception e) {
             logger.error("Failed to create new node " + path);
-
             logger.error(e);
-
         }
     }
 
@@ -188,7 +168,7 @@ public class KVServerWatcher {
     public void deleteNode(String path) {
         try {
             this.zk.delete(path, -1);
-            logger.info("Successfully delete Node at " + path);
+            logger.debug("Successfully delete Node at " + path);
         } catch (Exception e) {
             logger.error("Failed to delete Node at " + path);
             logger.error(e);
@@ -220,7 +200,7 @@ public class KVServerWatcher {
 
                 EventType eventType = event.getType();
 
-                logger.info("ROOT watcher triggered " + event.toString());
+                logger.debug("ROOT watcher triggered " + event.toString());
 
                 if (keeperState == KeeperState.SyncConnected) {
                     switch (eventType) {
@@ -230,17 +210,10 @@ public class KVServerWatcher {
                             connectedSemaphore.countDown();
                             break;
                         case NodeDataChanged:
-                            logger.info("Root Changed");
 
                             String data = readData(ROOT_PATH, this);
 
-                            if (data.equals("")) {
-                                kvServer.stop();
-                            } else {
-                                if (kvServer.getState() == KVServer.KVServerState.STOPPED)
-                                    kvServer.start();
-                                kvServer.setMetaData(MetaData.JsonToMeta(data));
-                            }
+                            executeAction(data.substring(0, 1), MetaData.JsonToMeta(data));
                             break;
                         case NodeDeleted:
                             logger.info("Node Deleted");
@@ -263,82 +236,43 @@ public class KVServerWatcher {
 
                 if (event == null) return;
 
-
-                KeeperState keeperState = event.getState();
-
-                EventType eventType = event.getType();
-
-                logger.info("Children watcher triggered " + event.toString());
-
-                if (keeperState == KeeperState.SyncConnected) {
-                    switch (eventType) {
-                        case NodeDataChanged:
-                            logger.info("Node is changed.");
-                            String data = readData(nodePath, this);
-
-                            if (data.equals("")) {
-                                logger.info("Change is not related");
-                                return;
-                            }
-
-                            updateServer(MetaData.JsonToMeta(data));
-                            break;
-                        case NodeDeleted:
-                            kvServer.close();
-                            break;
-                        default:
-                            logger.info("Change is not related");
-                    }
-
-                } else {
-                    logger.warn("Failed to connect with zookeeper server -> children node");
-                }
-            }
-        };
-
-        dataWatcher = new Watcher() {
-            @Override
-            public void process(WatchedEvent event) {
-                if (event == null) return;
-
-
                 KeeperState keeperState = event.getState();
 
                 EventType eventType = event.getType();
 
                 String path = event.getPath();
 
-                logger.info("Data watcher triggered " + event.toString());
+                logger.debug("Children watcher triggered " + event.toString());
 
                 if (keeperState == KeeperState.SyncConnected) {
                     switch (eventType) {
                         case NodeDataChanged:
-                            logger.info("Node is changed.");
-
-                            String data = readData(path, null);
-
-                            if (data.equals("")) {
-                                logger.info("Change is not related");
+                            if (path.equals(nodePath)) {
+                                exists(path, this);
+                                logger.debug("Irrelevant change.");
                                 return;
                             }
 
+                            // get new KV pair
+                            String data = readData(path, this);
+
                             Map.Entry<String, String> kv = parseJsonEntry(data);
                             kvServer.DBput(kv.getKey(), kv.getValue());
+                            logger.info("Get new KV key => " + kv.getKey());
 
                             writeData(path, "");
+                            break;
 
                         case NodeChildrenChanged:
-                            logger.info("Children Node is changed.");
-
+                            logger.info("Expecting new KV coming");
                             exists(path, this);
                         default:
-                            logger.info("Change is not related");
-                            break;
+                            logger.debug("Irrelevant change.");
                     }
-                } else {
-                    logger.warn("Failed to connect with zookeeper server -> data node");
-                }
 
+                } else {
+                    logger.warn("Failed to connect with zookeeper server -> children node");
+                }
             }
         };
 
@@ -352,24 +286,25 @@ public class KVServerWatcher {
 
                 EventType eventType = event.getType();
 
-                logger.info("Transfer watcher triggered " + event.toString());
+                String path = event.getPath();
+
+                logger.debug("Transfer watcher triggered " + event.toString());
 
                 if (keeperState == KeeperState.SyncConnected) {
                     switch (eventType) {
                         case NodeDataChanged:
 
-                            logger.info("Node is changed.");
-                            String data = readData(dataPath, this);
+                            String data = readData(path, this);
 
                             if (!data.equals("")) {
-                                logger.info("Change is not related");
+                                logger.debug("Irrelevant change.");
                                 return;
                             }
-
+                            logger.info("Finish transfer one KV pair.");
                             dataSemaphore.countDown();
                             break;
                         default:
-                            logger.info("Change is not related");
+                            logger.debug("Irrelevant change.");
                             break;
                     }
                 } else {
@@ -385,8 +320,9 @@ public class KVServerWatcher {
 
             connectedSemaphore.await();
 
-            createPath(nodePath, "", childrenWatcher);
-            createPath(dataPath, "", dataWatcher);
+            createPath(nodePath, "");
+
+            exists(nodePath, childrenWatcher);
 
         } catch (Exception e) {
             logger.error("Failed to process KVServer Watcher " + e);
@@ -398,68 +334,107 @@ public class KVServerWatcher {
         writeData(nodePath, "");
     }
 
-    void updateServer(MetaData meta) {
+
+    void executeAction(String action, MetaData meta) {
+
+        logger.info("#################### Get new Meat data ####################");
+
+        switch (action) {
+            case "A":
+                logger.info("--- Start Server ---");
+                kvServer.start();
+                break;
+            case "B":
+                logger.info("--- Stop Server ---");
+                kvServer.stop();
+                break;
+            case "C":
+                logger.info("--- Transfer data to new servers ---");
+                reRangeNewServers(meta);
+                break;
+            case "D":
+                logger.info("--- Transfer data to new replica ---");
+                reRangeNewReplicas(meta);
+                break;
+            case "E":
+                logger.info("--- Remove Server ---");
+                removeServer(meta);
+                break;
+            case "F":
+                logger.info("--- Update to new meta data ---");
+                kvServer.setMetaData(meta);
+                break;
+            default:
+                logger.error("Cannot recognize the meta " + action);
+        }
+        logger.info("--- Done! ---");
+
+    }
+
+
+    void reRangeNewServers(MetaData meta) {
 
         MetaData oldMeta = kvServer.getMetaData();
 
+        if (!meta.getPredecessor(KVname).equals(oldMeta.getPredecessor(KVname))) {
+            logger.info("Need to move data to new predecessors");
+
+            ArrayList<IECSNode> targets = meta.getServerBetween(oldMeta.getPredecessor(KVname), KVname);
+
+            for (IECSNode node : targets) {
+
+                try {
+                    kvServer.moveData(node.getNodeHashRange(), node.getNodeName());
+                } catch (Exception e) {
+                    logger.error("Cannot move data to " + node.getNodeName() + " " + e);
+                }
+                signalECS();
+            }
+        }
+    }
+
+    void reRangeNewReplicas(MetaData meta) {
+        MetaData oldMeta = kvServer.getMetaData();
+
+        ArrayList<String> oldReplica = oldMeta.getReplica(KVname);
+        ArrayList<String> newReplica = meta.getReplica(KVname);
+
+
+        //Check change for its replica
+        if (!oldReplica.containsAll(newReplica)) {
+
+            ArrayList<String> t_oldReplica = new ArrayList<>(oldReplica);
+
+            oldReplica.removeAll(newReplica);
+
+            newReplica.removeAll(t_oldReplica);
+
+            newReplica.addAll(oldReplica);
+
+            for (String node : newReplica) {
+
+                try {
+                    kvServer.moveData(meta.getNode(node).getNodeHashRange(), node);
+                } catch (Exception e) {
+                    logger.error("Cannot move data to " + node + " " + e);
+                }
+                signalECS();
+            }
+        }
+
+
+    }
+
+    void removeServer(MetaData meta) {
         if (meta.getNode(KVname) == null) {
-            //remove itself
-
             kvServer.close();
-
-        } else {
-
-            //Check change for its predecessor
-            if (!meta.getPredecessor(KVname).equals(oldMeta.getPredecessor(KVname))) {
-                logger.info("Need to move data to new predecessors");
-
-                ArrayList<IECSNode> targets = meta.getServerBetween(oldMeta.getPredecessor(KVname), KVname);
-
-                for (IECSNode node : targets) {
-
-                    try {
-                        kvServer.moveData(node.getNodeHashRange(), node.getNodeName());
-                    } catch (Exception e) {
-                        logger.error("Cannot move data to " + node.getNodeName() + " " + e);
-                    }
-                }
-            }
-
-
-            ArrayList<String> oldReplica = oldMeta.getReplica(KVname);
-            ArrayList<String> newReplica = meta.getReplica(KVname);
-
-
-            //Check change for its replica
-            if (!oldReplica.containsAll(newReplica)) {
-
-                ArrayList<String> t_oldReplica = new ArrayList<>(oldReplica);
-
-                oldReplica.removeAll(newReplica);
-
-                newReplica.removeAll(t_oldReplica);
-
-                newReplica.addAll(oldReplica);
-
-                for (String node : newReplica) {
-
-                    try {
-                        kvServer.moveData(meta.getNode(node).getNodeHashRange(), node);
-                    } catch (Exception e) {
-                        logger.error("Cannot move data to " + node + " " + e);
-                    }
-                }
-            }
-
             signalECS();
         }
     }
 
 
-
-
     void moveData(Map<String, String> map, String targetName) {
-        String dest = ROOT_PATH + "/" + targetName + "/data/data";
+        String dest = ROOT_PATH + "/" + targetName + "/data";
 
         int i = 0;
 
@@ -468,7 +443,7 @@ public class KVServerWatcher {
 
         dest = dest + i;
 
-        createPath(dest,"", transferWatcher);
+        createPath(dest, "");
 
         Iterator it = map.entrySet().iterator();
 
@@ -483,8 +458,8 @@ public class KVServerWatcher {
 
             dataSemaphore = new CountDownLatch(1);
 
-            writeData(dest, entryToJson(kv));
             exists(dest, transferWatcher);
+            writeData(dest, entryToJson(kv));
 
             try {
                 dataSemaphore.await();

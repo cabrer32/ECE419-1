@@ -19,6 +19,8 @@ public class ECSClient implements IECSClient {
     private boolean running = false;
     private ECS ecs = null;
 
+    private boolean newService = true;
+
 
     public ECSClient(String zkHostname, int zkPort, String configFileName) {
         ecs = new ECS(zkHostname, zkPort, configFileName);
@@ -28,7 +30,7 @@ public class ECSClient implements IECSClient {
     public boolean start() {
 
         if (ecs != null) {
-            ecs.broadcastMeta();
+            ecs.start();
             running = true;
             return true;
         }
@@ -83,10 +85,13 @@ public class ECSClient implements IECSClient {
                 logger.error(e.getMessage());
             }
 
-            ecs.addServers((TreeSet<IECSNode>) serversTaken);
+            if(!newService){
+                ecs.updateServerData(serversTaken.size());
+                ecs.updateServerReplica(serversTaken.size() * 4);
+            }
 
             if(running) {
-                ecs.broadcastMeta();
+                start();
             }
 
         } else {
@@ -98,7 +103,7 @@ public class ECSClient implements IECSClient {
 
     @Override
     public Collection<IECSNode> setupNodes(int count, String cacheStrategy, int cacheSize) {
-        return ecs.getAvailableServers(count, cacheStrategy, cacheSize);
+        return ecs.setupNewServers(count, cacheStrategy, cacheSize);
     }
 
     @Override
@@ -309,7 +314,7 @@ public class ECSClient implements IECSClient {
     public static void main(String[] args) {
         // TODO
         try {
-            new logger.LogSetup("logs/ecs.log", Level.ALL);
+            new logger.LogSetup("logs/ecs.log", Level.INFO);
             if (args.length != 1) {
                 System.out.println("Error! Invalid number of arguments!");
                 System.out.println("Usage: ECS <configuration file>!");

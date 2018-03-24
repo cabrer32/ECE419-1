@@ -26,11 +26,11 @@ public class MetaData implements IMetaData {
 
         ArrayList<IECSNode> serverArray = new ArrayList<>(serverRepo);
 
-        for(int i = 0; i< serverArray.size(); i++){
+        for (int i = 0; i < serverArray.size(); i++) {
 
             ECSNode node = (ECSNode) serverArray.get(i);
 
-            if(i == (serverArray.size() - 1))
+            if (i == (serverArray.size() - 1))
                 node.setEndingHashValue(serverArray.get(0).getNodeHashRange()[0]);
 
             else
@@ -51,11 +51,11 @@ public class MetaData implements IMetaData {
 
         ArrayList<IECSNode> serverArray = new ArrayList<>(serverRepo);
 
-        for(int i = 0; i< serverArray.size() ; i++){
-            if(serverArray.get(i).getNodeName().equals(name)){
-             if(i == 0) return serverArray.get(serverArray.size() - 1).getNodeName();
+        for (int i = 0; i < serverArray.size(); i++) {
+            if (serverArray.get(i).getNodeName().equals(name)) {
+                if (i == 0) return serverArray.get(serverArray.size() - 1).getNodeName();
 
-             return serverArray.get(i-1).getNodeName();
+                return serverArray.get(i - 1).getNodeName();
             }
         }
 
@@ -67,11 +67,11 @@ public class MetaData implements IMetaData {
 
         ArrayList<IECSNode> serverArray = new ArrayList<>(serverRepo);
 
-        for(int i = 0; i< serverArray.size(); i++){
-            if(serverArray.get(i).getNodeName().equals(name)){
-                if(i == (serverArray.size() - 1)) return serverArray.get(0).getNodeName();
+        for (int i = 0; i < serverArray.size(); i++) {
+            if (serverArray.get(i).getNodeName().equals(name)) {
+                if (i == (serverArray.size() - 1)) return serverArray.get(0).getNodeName();
 
-                return serverArray.get(i+1).getNodeName();
+                return serverArray.get(i + 1).getNodeName();
             }
         }
 
@@ -149,7 +149,7 @@ public class MetaData implements IMetaData {
     }
 
     @Override
-    public ArrayList<String> getReplica(String name){
+    public ArrayList<String> getReplica(String name) {
 
 
         ArrayList<String> list = new ArrayList<>();
@@ -159,24 +159,20 @@ public class MetaData implements IMetaData {
         list.add(getSuccessor(list.get(0)));
 
 
-
-return list;
-
-
+        return list;
 
 
     }
 
 
-
-    public static String MetaToJson(MetaData meta) {
+    public static String MetaToJson(String type, MetaData meta) {
         try {
             Type listType = new TypeToken<TreeSet<ECSNode>>() {
             }.getType();
 
             String data = new Gson().toJson(meta.getServerRepo(), listType);
 
-            return 1 + data;
+            return type + data;
 
         } catch (JsonSyntaxException e) {
             System.out.println("Invalid Message syntax " + e.getMessage());
@@ -188,9 +184,8 @@ return list;
         try {
             Type listType = new TypeToken<TreeSet<ECSNode>>() {
             }.getType();
-            
 
-            TreeSet<IECSNode> list = new Gson().fromJson(meta, listType);
+            TreeSet<IECSNode> list = new Gson().fromJson(meta.substring(1), listType);
             return new MetaData(list);
 
         } catch (JsonSyntaxException e) {

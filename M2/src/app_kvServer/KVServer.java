@@ -358,13 +358,11 @@ public class KVServer implements IKVServer {
 
     @Override
     public void start() {
-        logger.info("--Start server ...");
         state = KVServerState.RUNNING;
     }
 
     @Override
     public void stop() {
-        logger.info("--Stoping server");
         state = KVServerState.STOPPED;
     }
 
@@ -408,7 +406,7 @@ public class KVServer implements IKVServer {
             if (args.length != 6) {
                 System.out.println("Invalid argument! Usage: Server <name> <zkHostname> <zkPort>!");
             } else {
-                new logger.LogSetup("logs/server/" + args[0] + ".log", Level.ALL);
+                new logger.LogSetup("logs/server/" + args[0] + ".log", Level.INFO);
 
                 KVServer server = new KVServer(args[0], args[1], Integer.parseInt(args[2]));
 

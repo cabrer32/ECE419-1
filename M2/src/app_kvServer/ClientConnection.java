@@ -165,7 +165,7 @@ public class ClientConnection implements Runnable {
         }
 
         if(!compare(key)){
-            return new Message(KVMessage.StatusType.SERVER_NOT_RESPONSIBLE, key, MetaData.MetaToJson(server.getMetaData()));
+            return new Message(KVMessage.StatusType.SERVER_NOT_RESPONSIBLE, key, MetaData.MetaToJson("N",server.getMetaData()));
         }
 
         String value = server.getKV(key);
@@ -181,7 +181,7 @@ public class ClientConnection implements Runnable {
         }
 
         if(!compare(key)){
-            return new Message(KVMessage.StatusType.SERVER_NOT_RESPONSIBLE, key, MetaData.MetaToJson(server.getMetaData()));
+            return new Message(KVMessage.StatusType.SERVER_NOT_RESPONSIBLE, key, MetaData.MetaToJson("N",server.getMetaData()));
         }
 
         //case when deleting

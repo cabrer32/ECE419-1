@@ -11,7 +11,6 @@ public class ECSNode implements IECSNode, Comparable<ECSNode>{
     private String cacheStrategy;
     private int cachesize;
     private int port;
-    private boolean type;
 
 
     public ECSNode (){}
@@ -85,10 +84,6 @@ public class ECSNode implements IECSNode, Comparable<ECSNode>{
 
     public void setCachesize(int cachesize) {
         this.cachesize = cachesize;
-    }
-
-    public boolean getNodeType() {
-        return this.type;
     }
 
     public boolean contains(String hashValue) {

@@ -85,12 +85,7 @@ public class ECS {
 
     public void initServers(TreeSet<IECSNode> list) {
 
-        Set<String> names = new HashSet<>();
-
-        for(IECSNode node : list)
-            names.add(node.getNodeName());
-
-        zkWatch.setSemaphore(list.size(), names);
+        zkWatch.setSemaphore(list.size());
 
         for (Iterator<IECSNode> iterator = list.iterator(); iterator.hasNext(); ) {
             ECSNode node = (ECSNode) iterator.next();
@@ -108,31 +103,29 @@ public class ECS {
         }
     }
 
-    public void addServers(TreeSet<IECSNode> servers) {
-
-        for (IECSNode node : servers)
-            meta.addNode(node);
-
-        meta.setHashRange();
 
 
-        Set<String> list = new HashSet<>();
+    public void updateServerData(int num){
+        logger.info("--- updating server data ---");
 
-        for (IECSNode node : servers) {
+        zkWatch.setSemaphore(num);
 
-            String successor = meta.getSuccessor(node.getNodeName());
+        broadcastMeta("C");
 
-            if (!servers.contains(meta.getNode(successor)))
-                list.add(successor);
-
-            String predecessor = meta.getSuccessor(node.getNodeName());
-
-            if (!servers.contains(meta.getNode(predecessor)))
-                list.add(predecessor);
-        }
-
-        notifyNodes(list);
+        awaitNodes(100000000);
     }
+
+
+    public void updateServerReplica(int num){
+        logger.info("--- updating server replica ---");
+
+        zkWatch.setSemaphore(num);
+
+        broadcastMeta("D");
+
+        awaitNodes(100000000);
+    }
+
 
 
     public boolean removeServers(Collection<String> nodeNames, boolean reuse) {
@@ -145,7 +138,18 @@ public class ECS {
 
         meta.setHashRange();
 
-        notifyNodes(nodeNames);
+        //remove
+
+        zkWatch.setSemaphore(nodeNames.size());
+
+        broadcastMeta("E");
+
+        awaitNodes(100000000);
+
+        //
+
+
+        updateServerReplica(nodeNames.size() * 2);
 
         return true;
     }
@@ -157,7 +161,7 @@ public class ECS {
 
 
 
-    public TreeSet<IECSNode> getAvailableServers(int count, String cacheStrategy, int cacheSize) {
+    public TreeSet<IECSNode> setupNewServers(int count, String cacheStrategy, int cacheSize) {
 
         if (avaServer.size() < count) {
             logger.error("Do not have enough servers");
@@ -172,7 +176,11 @@ public class ECS {
             node.setCachesize(cacheSize);
             node.setCacheStrategy(cacheStrategy);
             list.add(node);
+            meta.addNode(node);
+            zkWatch.watchNewNode(node.getNodeName());
         }
+
+        meta.setHashRange();
 
         return list;
     }
@@ -188,30 +196,23 @@ public class ECS {
 
 
 
-    public void broadcastMeta() {
-        zkWatch.writeData(ROOT_PATH, MetaData.MetaToJson(meta));
+    public void broadcastMeta(String type) {
+        zkWatch.writeData(ROOT_PATH, MetaData.MetaToJson(type, meta));
     }
 
-
-    private void notifyNodes(Collection<String> list) {
-
-        logger.info("Start rearranging servers.");
-
-        zkWatch.setSemaphore(list.size(), list);
-
-        for (String name : list) {
-            zkWatch.writeData(CHILDREN_PATH_SUFFIX + name, MetaData.MetaToJson(meta));
-        }
-
-        awaitNodes(100000000);
-    }
 
     public boolean awaitNodes(int timeout) {
         return zkWatch.awaitNodes(timeout);
     }
 
+    public boolean start() {
+        broadcastMeta("A");
+        return true;
+    }
+
     public boolean stop() {
-        return zkWatch.writeData(ROOT_PATH, "");
+        broadcastMeta("B");
+        return true;
     }
 
     public boolean shutdown() {
