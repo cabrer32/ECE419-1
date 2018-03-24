@@ -96,7 +96,7 @@ public class ECSNode implements IECSNode, Comparable<ECSNode>{
                 ((hashValue.compareTo(startingHashValue) >= 0) ||
                 (hashValue.compareTo(endingHashValue) <= 0))) {
             return true;
-        } else if ((startingHashValue.compareTo(endingHashValue) >= 0) &&
+        } else if ((startingHashValue.compareTo(endingHashValue) <= 0) &&
                 (hashValue.compareTo(startingHashValue) >= 0) &&
                 (hashValue.compareTo(endingHashValue) <= 0)) {
             return true;

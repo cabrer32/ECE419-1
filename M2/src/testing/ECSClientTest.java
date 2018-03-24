@@ -32,7 +32,7 @@ public class ECSClientTest extends TestCase {
         int[] addSizes = {1, 2};
         String cacheStrategy = "None";
         int cacheSizes = 100;
-        String[] nodeNames = {"server8", "server7", "server6"};
+        String[] nodeNames = {"server8", "server6", "server1"};
 
         /**
          * addnodes() before start()
@@ -66,13 +66,13 @@ public class ECSClientTest extends TestCase {
         /**
          * getNodeByKey()
          */
-        IECSNode node = ecsClient.getNodeByKey("00000000000000000000000000000000");
+        IECSNode node = ecsClient.getNodeByKey("25000000000000000000000000000000");
         assertNotNull("getNodeByKey() failed.", node);
         assertTrue(node.getNodeName().equals(nodeNames[0]));
-        node = ecsClient.getNodeByKey("00000000000000000000000000000000");
+        node = ecsClient.getNodeByKey("30000000000000000000000000000000");
         assertNotNull("getNodeByKey() failed.", node);
         assertTrue(node.getNodeName().equals(nodeNames[1]));
-        node = ecsClient.getNodeByKey("00000000000000000000000000000000");
+        node = ecsClient.getNodeByKey("40000000000000000000000000000000");
         assertNotNull("getNodeByKey() failed.", node);
         assertTrue(node.getNodeName().equals(nodeNames[2]));
 
