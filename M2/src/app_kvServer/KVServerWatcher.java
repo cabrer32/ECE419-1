@@ -410,8 +410,9 @@ public class KVServerWatcher {
         } else {
 
             //Check change for its predecessor
-            if (!meta.getPredecessor(KVname).equals(meta.getPredecessor(KVname))) {
+            if (!meta.getPredecessor(KVname).equals(oldMeta.getPredecessor(KVname))) {
                 logger.info("Need to move data to new predecessors");
+
                 ArrayList<IECSNode> targets = meta.getServerBetween(oldMeta.getPredecessor(KVname), KVname);
 
                 for (IECSNode node : targets) {
@@ -469,10 +470,10 @@ public class KVServerWatcher {
 
         createPath(dest,"", transferWatcher);
 
-
         Iterator it = map.entrySet().iterator();
 
         logger.info("Start transfering data to " + targetName + " with size " + map.size());
+
         while (it.hasNext()) {
             Map.Entry<String, String> kv = (Map.Entry<String, String>) it.next();
 
@@ -491,6 +492,8 @@ public class KVServerWatcher {
                 logger.error("Cannot send data ");
             }
         }
+
+        deleteNode(dest);
     }
 
     Map.Entry<String, String> parseJsonEntry(String data) {

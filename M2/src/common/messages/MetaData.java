@@ -174,7 +174,10 @@ return list;
             Type listType = new TypeToken<TreeSet<ECSNode>>() {
             }.getType();
 
-            return new Gson().toJson(meta.getServerRepo(), listType);
+            String data = new Gson().toJson(meta.getServerRepo(), listType);
+
+            return 1 + data;
+
         } catch (JsonSyntaxException e) {
             System.out.println("Invalid Message syntax " + e.getMessage());
         }
@@ -185,6 +188,7 @@ return list;
         try {
             Type listType = new TypeToken<TreeSet<ECSNode>>() {
             }.getType();
+            
 
             TreeSet<IECSNode> list = new Gson().fromJson(meta, listType);
             return new MetaData(list);
