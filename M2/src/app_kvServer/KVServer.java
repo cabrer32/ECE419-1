@@ -381,16 +381,13 @@ public class KVServer implements IKVServer {
         try {
             HashMap<String, String> map = db.getRangeKV(hashRange);
 
-            Iterator it = map.entrySet().iterator();
-
             logger.info("Start transfering data to " + targetName + " with size " + map.size());
-            while (it.hasNext()) {
-                zkWatch.moveData((Map.Entry<String, String> ) it.next(), targetName);
-            }
+
+            zkWatch.moveData(map,targetName);
 
             logger.info("Removing data");
-            db.removeRangeKV(hashRange);
 
+            db.removeRangeKV(hashRange);
         } catch (Exception e) {
             logger.info("cannot get ranged kV");
         }

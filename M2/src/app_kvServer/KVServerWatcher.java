@@ -264,7 +264,7 @@ public class KVServerWatcher {
                             logger.info("Node is changed.");
                             String data = readData(nodePath, this);
 
-                            if(data.equals("")){
+                            if (data.equals("")) {
                                 logger.info("Change is not related");
                                 return;
                             }
@@ -294,16 +294,18 @@ public class KVServerWatcher {
 
                 EventType eventType = event.getType();
 
+                String path = event.getPath();
+
                 logger.info("Data watcher triggered " + event.toString());
 
                 if (keeperState == KeeperState.SyncConnected) {
                     switch (eventType) {
-                        case NodeCreated:
-
+                        case NodeDataChanged:
                             logger.info("Node is changed.");
-                            String data = readData(dataPath, null);
 
-                            if(data.equals("")){
+                            String data = readData(path, null);
+
+                            if (data.equals("")) {
                                 logger.info("Change is not related");
                                 return;
                             }
@@ -311,8 +313,12 @@ public class KVServerWatcher {
                             Map.Entry<String, String> kv = parseJsonEntry(data);
                             kvServer.DBput(kv.getKey(), kv.getValue());
 
-                            writeData(dataPath,"");
-                            break;
+                            writeData(path, "");
+
+                        case NodeChildrenChanged:
+                            logger.info("Children Node is changed.");
+
+                            exists(path, this);
                         default:
                             logger.info("Change is not related");
                             break;
@@ -341,9 +347,9 @@ public class KVServerWatcher {
                         case NodeDataChanged:
 
                             logger.info("Node is changed.");
-                            String data = readData(dataPath, null);
+                            String data = readData(dataPath, this);
 
-                            if(!data.equals("")){
+                            if (!data.equals("")) {
                                 logger.info("Change is not related");
                                 return;
                             }
@@ -367,8 +373,8 @@ public class KVServerWatcher {
 
             connectedSemaphore.await();
 
-            createPath(nodePath,"",childrenWatcher);
-            createPath(dataPath,"",dataWatcher);
+            createPath(nodePath, "", childrenWatcher);
+            createPath(dataPath, "", dataWatcher);
 
         } catch (Exception e) {
             logger.error("Failed to process KVServer Watcher " + e);
@@ -376,91 +382,104 @@ public class KVServerWatcher {
     }
 
 
-    void signalECS(){
-        writeData(nodePath,"");
+    void signalECS() {
+        writeData(nodePath, "");
     }
 
     void updateServer(MetaData meta) {
 
-        if(!meta.hasServer(KVname)){
+        MetaData oldMeta = kvServer.getMetaData();
+
+        if (meta.getNode(KVname) == null) {
             //remove itself
-
-            //transfer data
-            MetaData oldMeta = kvServer.getMetaData();
-
-            String successor = oldMeta.getSuccessor(KVname);
-
-            while(!meta.hasServer(successor))
-                successor = oldMeta.getSuccessor(successor);
-
-            try{
-                kvServer.moveData(oldMeta.getHashRange(KVname), successor);
-            } catch(Exception e) {
-                logger.error("Cannot move data to "+ successor + " " + e);
-            }
-
-            signalECS();
 
             kvServer.close();
 
-        }
-        else{
-            //transfer data to someone else
+        } else {
 
-            if(meta.isCoordinator(KVname)){
-                MetaData oldMeta = kvServer.getMetaData();
-
+            //Check change for its predecessor
+            if (!meta.getPredecessor(KVname).equals(meta.getPredecessor(KVname))) {
+                logger.info("Need to move data to new predecessors");
                 ArrayList<IECSNode> targets = meta.getServerBetween(oldMeta.getPredecessor(KVname), KVname);
 
-                for(IECSNode node:targets){
+                for (IECSNode node : targets) {
 
-                    try{
+                    try {
                         kvServer.moveData(node.getNodeHashRange(), node.getNodeName());
-                    } catch(Exception e) {
-                        logger.error("Cannot move data to "+ node.getNodeName() + " " + e);
+                    } catch (Exception e) {
+                        logger.error("Cannot move data to " + node.getNodeName() + " " + e);
                     }
-
                 }
-
-
-
-            }else{
-                String coordinator = meta.getCoordinator(KVname).getNodeName();
-
-                try{
-                    kvServer.moveData(meta.getHashRange(KVname), coordinator);
-                } catch(Exception e) {
-                    logger.error("Cannot move data to "+ coordinator + " " + e);
-                }
-
-
             }
+
+
+            ArrayList<String> oldReplica = oldMeta.getReplica(KVname);
+            ArrayList<String> newReplica = meta.getReplica(KVname);
+
+
+            //Check change for its replica
+            if (!oldReplica.containsAll(newReplica)) {
+
+                ArrayList<String> t_oldReplica = new ArrayList<>(oldReplica);
+
+                oldReplica.removeAll(newReplica);
+
+                newReplica.removeAll(t_oldReplica);
+
+                newReplica.addAll(oldReplica);
+
+                for (String node : newReplica) {
+
+                    try {
+                        kvServer.moveData(meta.getNode(node).getNodeHashRange(), node);
+                    } catch (Exception e) {
+                        logger.error("Cannot move data to " + node + " " + e);
+                    }
+                }
+            }
+
+
+            signalECS();
         }
 
-        signalECS();
+
     }
 
 
+    void moveData(Map<String, String> map, String targetName) {
+        String dest = ROOT_PATH + "/" + targetName + "/data/data";
+
+        int i = 0;
+
+        while (exists(dest + i, null) != null)
+            i++;
+
+        dest = dest + i;
+
+        createPath(dest,"", transferWatcher);
 
 
+        Iterator it = map.entrySet().iterator();
+
+        logger.info("Start transfering data to " + targetName + " with size " + map.size());
+        while (it.hasNext()) {
+            Map.Entry<String, String> kv = (Map.Entry<String, String>) it.next();
 
 
-    void moveData(Map.Entry<String, String> kv, String targetName) {
-        String dest = ROOT_PATH + "/" + targetName + "/data";
+            logger.info("Sending key => " + kv.getKey() + " to " + targetName);
 
-        logger.info("Sending key => " + kv.getKey() + " to " + targetName);
 
-        dataSemaphore = new CountDownLatch(1);
+            dataSemaphore = new CountDownLatch(1);
 
-        writeData(dest, entryToJson(kv));
-        exists(dest, transferWatcher);
+            writeData(dest, entryToJson(kv));
+            exists(dest, transferWatcher);
 
-        try {
-            dataSemaphore.await();
-        } catch (Exception e) {
-            logger.error("Cannot send data ");
+            try {
+                dataSemaphore.await();
+            } catch (Exception e) {
+                logger.error("Cannot send data ");
+            }
         }
-
     }
 
     Map.Entry<String, String> parseJsonEntry(String data) {

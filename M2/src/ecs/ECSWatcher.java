@@ -10,6 +10,7 @@ import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.data.Stat;
 import org.apache.log4j.Logger;
 
+import java.util.Collection;
 import java.util.TreeSet;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -24,7 +25,6 @@ public class ECSWatcher {
 
     private static final String ROOT_PATH = "/ecs";
 
-    private static final String CONNECTION_ADDR = "127.0.0.1:2181";
     private static final int SESSION_TIMEOUT = 5000;
     /**
      * zk children path
@@ -33,7 +33,8 @@ public class ECSWatcher {
     /**
      * signal to complete zookeeper creation
      */
-    private CountDownLatch connectedSemaphore = new CountDownLatch(1);;
+    private CountDownLatch connectedSemaphore = new CountDownLatch(1);
+    ;
 
     /**
      * signal to complete zookeeper creation
@@ -45,13 +46,15 @@ public class ECSWatcher {
     private static Logger logger = Logger.getRootLogger();
 
 
-    /** root watcher*/
+    /**
+     * root watcher
+     */
     private Watcher rootWatcher = null;
 
     private Watcher childrenWatcher = null;
 
 
-    public void init() {
+    public void init(String zkHostname, int zkPort) {
         rootWatcher = new Watcher() {
             @Override
             public void process(WatchedEvent event) {
@@ -75,9 +78,10 @@ public class ECSWatcher {
                         case NodeChildrenChanged:
                             try {
                                 zk.getChildren(ROOT_PATH, this);
-                            }catch (Exception e){
+                            } catch (Exception e) {
                                 logger.error("cannot watcher children");
                             }
+
                             logger.info("Children Node Changed");
                             awaitSemaphore.countDown();
                         default:
@@ -123,19 +127,16 @@ public class ECSWatcher {
             }
         };
         try {
-            zk = new ZooKeeper(CONNECTION_ADDR, SESSION_TIMEOUT, rootWatcher);
+            zk = new ZooKeeper(zkHostname + ":" + zkPort, SESSION_TIMEOUT, rootWatcher);
 
             connectedSemaphore.await();
 
-            createPath(ROOT_PATH,"", rootWatcher);
+            createPath(ROOT_PATH, "", rootWatcher);
 
-        }catch (Exception e) {
+        } catch (Exception e) {
             logger.error("Failed to process KVServer Watcher " + e);
         }
     }
-
-
-
 
 
     /**
@@ -144,19 +145,10 @@ public class ECSWatcher {
 
     public void createPath(String path, String data, Watcher watcher) {
         try {
-            logger.info("Creating node at " + path);
-            Stat stat = this.zk.exists(path, null);
-
-            if (stat != null) {
-                logger.info("node at path " + path + " already exists");
-                deleteNode(path);
-            }
             this.zk.create(path, data.getBytes(), Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
             logger.info("Successfully create new node " + path);
-            this.zk.exists(path, watcher);
         } catch (Exception e) {
             logger.error("Failed to create new node " + path);
-            logger.error(e);
         }
     }
 
@@ -179,17 +171,23 @@ public class ECSWatcher {
     /**
      * delete node
      */
-    public boolean deleteNode(String path) {
+    public boolean deleteNode(String name) {
         try {
-            if (zk.exists(path, false) != null)
+            String path = CHILDREN_PATH + name;
+
+            if (zk.exists(path, false) != null){
+                if(zk.exists(path + "/data", false) != null)
+                    this.zk.delete(path + "/data", -1);
                 this.zk.delete(path, -1);
-            logger.info("Successfully delete Node at " + path);
+            }
+
+            logger.info("Successfully delete Node for server " + name);
+            return true;
+
         } catch (Exception e) {
-            logger.error("Failed to delete Node at " + path);
-            logger.error(e.getMessage());
+            logger.error("Failed to delete Node for server " + name);
             return false;
         }
-        return true;
     }
 
     /**
@@ -205,17 +203,18 @@ public class ECSWatcher {
     }
 
 
-    public void setSemaphore(int count, TreeSet<IECSNode> list) {
+    public void setSemaphore(int count, Collection<String> list) {
         try {
 
             zk.getChildren(ROOT_PATH, rootWatcher);
 
-            for(IECSNode node : list){
-                exists(CHILDREN_PATH + node.getNodeName(), childrenWatcher);
-            }
+            if (list != null)
+                for (String node : list) {
+                    exists(CHILDREN_PATH + node, childrenWatcher);
+                }
 
             awaitSemaphore = new CountDownLatch(count);
-        }catch (Exception e){
+        } catch (Exception e) {
             logger.error("Cannot watch children");
         }
     }
@@ -226,7 +225,7 @@ public class ECSWatcher {
 
         try {
             ifNotTimeout = awaitSemaphore.await(timeout, TimeUnit.MILLISECONDS);
-            logger.info("Finish waiting nodes " + ifNotTimeout);
+            logger.info("Finish waiting nodes status is" + ifNotTimeout);
         } catch (InterruptedException e) {
             logger.error("Await Nodes has been interrupted!");
         }
@@ -235,7 +234,7 @@ public class ECSWatcher {
 
 
     public boolean deleteAllNodes(TreeSet<IECSNode> serverRepoTaken) {
-        boolean ifAllSuccess = true;
+
         logger.info("Deleting all nodes");
 
         try {
@@ -245,11 +244,11 @@ public class ECSWatcher {
         }
 
         for (IECSNode node : serverRepoTaken) {
-            ifAllSuccess = ifAllSuccess && this.deleteNode(CHILDREN_PATH + node.getNodeName() + "/data");
-            ifAllSuccess = ifAllSuccess && this.deleteNode(CHILDREN_PATH + node.getNodeName());
+            deleteNode(node.getNodeName());
         }
 
-        ifAllSuccess = ifAllSuccess && this.deleteNode(ROOT_PATH);
-        return ifAllSuccess;
+        this.deleteNode(ROOT_PATH);
+
+        return true;
     }
 }

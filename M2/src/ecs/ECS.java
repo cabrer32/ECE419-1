@@ -17,13 +17,12 @@ public class ECS {
     private static Logger logger = Logger.getRootLogger();
     //private static final String SCRIPT_TEXT = "ssh -n %s nohup java -jar /m2-server.jar %s %s %s %s %s %s &";
     private static final String SCRIPT_TEXT = "ssh -n %s nohup java -jar /Users/wuqili/Desktop/ECE419/M2/m2-server.jar %s %s %s %s %s %s &";
-  //  private static final String SCRIPT_TEXT = "ssh -n %s nohup java -jar /Users/pannnnn/UTcourses/ECE419/Milestones/ece419/M2/m2-server.jar %s %s %s %s %s %s &";
+    //  private static final String SCRIPT_TEXT = "ssh -n %s nohup java -jar /Users/pannnnn/UTcourses/ECE419/Milestones/ece419/M2/m2-server.jar %s %s %s %s %s %s &";
 
     private ECSWatcher zkWatch;
 
     private MetaData meta;
     private TreeSet<IECSNode> avaServer = new TreeSet<>();
-    private TreeSet<IECSNode> avaRepica = new TreeSet<>();
 
 
     private static final String LOCAL_HOST = "127.0.0.1";
@@ -33,21 +32,20 @@ public class ECS {
     private static final String NODE_PATH_SUFFIX = "/ecs/";
 
     /**
-     * if the service is made up of any servers
+     * Initialize
      **/
-    public ECS(String configFileName, String repicaFileName) {
-        loadFile(configFileName, avaServer, true);
-        loadFile(repicaFileName, avaRepica, false);
+    public ECS(String zkHostname, int zkPort, String configFileName) {
+        loadFile(configFileName);
 
         Logger.getLogger("org.apache.zookeeper").setLevel(Level.ERROR);
 
         zkWatch = new ECSWatcher();
-        zkWatch.init();
+        zkWatch.init(zkHostname, zkPort);
 
-        meta = new MetaData(new TreeSet<IECSNode>());
+        meta = new MetaData(new TreeSet<>());
     }
 
-    private void loadFile(String configFileName, TreeSet<IECSNode> servers, boolean coordinate) {
+    private void loadFile(String configFileName) {
         File configFile = new File(configFileName);
         try {
             Scanner scanner = new Scanner(configFile);
@@ -64,8 +62,8 @@ public class ECS {
                 md.update(hashKey.getBytes());
                 byte[] digest = md.digest();
                 String startingHash = DatatypeConverter.printHexBinary(digest).toUpperCase();
-                node = new ECSNode(name, host, port, startingHash, coordinate);
-                servers.add(node);
+                node = new ECSNode(name, host, port, startingHash);
+                avaServer.add(node);
             }
         } catch (FileNotFoundException e) {
             System.out.println("Error! Unable to open the file!");
@@ -76,48 +74,20 @@ public class ECS {
         }
     }
 
-    public TreeSet<IECSNode> getAvaliableServers(int count, String cacheStrategy, int cacheSize) {
-        if (avaServer.size() < count && avaRepica.size() < count * 2)
-            return null;
-
-        TreeSet<IECSNode> list = new TreeSet<>();
 
 
-        for (int i = 0; i < count; i++) {
-            ECSNode node = (ECSNode) avaServer.pollFirst();
-            node.setCachesize(cacheSize);
-            node.setCacheStrategy(cacheStrategy);
-            list.add(node);
-
-            for (int j = 0; j < 2; j++) {
-                ECSNode replica = (ECSNode) avaRepica.pollFirst();
-                replica.setCachesize(cacheSize);
-                replica.setCacheStrategy(cacheStrategy);
-                replica.setStartingHashValue(node.getStartingHashValue());
-                list.add(replica);
-            }
-        }
-        return list;
-    }
-
-    public void startAllNodes() {
-        zkWatch.writeData(ROOT_PATH, MetaData.MetaToJson(meta));
-    }
-
-    public void sendMeta(IECSNode node) {
-        zkWatch.writeData(NODE_PATH_SUFFIX + node.getNodeName(), MetaData.MetaToJson(meta));
-    }
-
+    /**
+     *
+     * Following function will take command from ecs client
+     *
+     * */
 
     public void initServers(TreeSet<IECSNode> list) {
 
-        zkWatch.setSemaphore(list.size(), meta.getServerRepo());
+        zkWatch.setSemaphore(list.size(), null);
 
         for (Iterator<IECSNode> iterator = list.iterator(); iterator.hasNext(); ) {
             ECSNode node = (ECSNode) iterator.next();
-//            //TODO
-//            if(node.getNodeName().equals("server8"))
-//                continue;
 
             String script = String.format(SCRIPT_TEXT, LOCAL_HOST, node.getNodeName(), CONNECTION_ADDR_HOST,
                     CONNECTION_ADDR_PORT, node.getNodePort(), node.getCacheStrategy(), node.getCachesize());
@@ -132,26 +102,106 @@ public class ECS {
         }
     }
 
-    public void addMeta(TreeSet<IECSNode> list) {
-        meta.getServerRepo().addAll(list);
-        meta = new MetaData(meta.getServerRepo());
+    public void addServers(TreeSet<IECSNode> servers) {
+
+        for (IECSNode node : servers)
+            meta.addNode(node);
+
+        meta.setHashRange();
+
+
+        Set<String> list = new HashSet<>();
+
+        for (IECSNode node : servers) {
+
+            String successor = meta.getSuccessor(node.getNodeName());
+
+            if (!servers.contains(meta.getNode(successor)))
+                list.add(successor);
+
+            String predecessor = meta.getSuccessor(node.getNodeName());
+
+            if (!servers.contains(meta.getNode(predecessor)))
+                list.add(predecessor);
+        }
+
+        notifyNodes(list);
     }
 
-    public boolean removeNodes(Collection<String> nodeNames) {
 
-        for (String nodeName : nodeNames) {
-            IECSNode coordinator = meta.getCoordinator(nodeName);
-            TreeSet<IECSNode> replica = meta.getReplica(nodeName);
+    public boolean removeServers(Collection<String> nodeNames, boolean reuse) {
 
-            avaServer.add(meta.removeNode(coordinator.getNodeName()));
-            for (IECSNode node : replica)
-                avaRepica.add(meta.removeNode(node.getNodeName()));
-
+        for (String name : nodeNames) {
+            IECSNode node = meta.removeNode(name);
+            if (reuse)
+                avaServer.add(node);
         }
+
+        meta.setHashRange();
+
+        notifyNodes(nodeNames);
 
         return true;
     }
 
+
+    public TreeSet<IECSNode> getServers() {
+        return meta.getServerRepo();
+    }
+
+
+
+    public TreeSet<IECSNode> getAvailableServers(int count, String cacheStrategy, int cacheSize) {
+
+        if (avaServer.size() < count) {
+            logger.error("Do not have enough servers");
+            return null;
+        }
+
+
+        TreeSet<IECSNode> list = new TreeSet<>();
+
+        for (int i = 0; i < count; i++) {
+            ECSNode node = (ECSNode) avaServer.pollFirst();
+            node.setCachesize(cacheSize);
+            node.setCacheStrategy(cacheStrategy);
+            list.add(node);
+        }
+
+        return list;
+    }
+
+
+
+
+    /**
+     *
+     * Following functions will interact with ECS watcher
+     *
+     **/
+
+
+
+    public void broadcastMeta() {
+        zkWatch.writeData(ROOT_PATH, MetaData.MetaToJson(meta));
+    }
+
+
+    private void notifyNodes(Collection<String> list) {
+
+        logger.info("Start rearranging servers.");
+
+        zkWatch.setSemaphore(list.size(), list);
+
+        for (String name : list) {
+            zkWatch.writeData(NODE_PATH_SUFFIX + name, MetaData.MetaToJson(meta));
+        }
+
+
+        awaitNodes(100000000);
+
+        logger.info("Finish rearranging new nodes.");
+    }
 
     public boolean awaitNodes(int timeout) {
         return zkWatch.awaitNodes(timeout);
@@ -163,43 +213,5 @@ public class ECS {
 
     public boolean shutdown() {
         return zkWatch.deleteAllNodes(meta.getServerRepo());
-    }
-
-    public TreeSet<IECSNode> getNodes() {
-        return meta.getServerRepo();
-    }
-
-    public void notifyNodes(Collection<String> list) {
-        for (String name : list) {
-            zkWatch.writeData(NODE_PATH_SUFFIX + name, MetaData.MetaToJson(meta));
-        }
-    }
-
-    public void notifySuccessor(TreeSet<IECSNode> serversTaken) {
-
-        if (serversTaken.size()  == meta.getServerRepo().size())
-            return;
-
-        Set<String> list = new HashSet<>();
-
-        for (IECSNode node : serversTaken) {
-
-            if (!((ECSNode) node).getNodeType())
-                continue;
-
-            String successor = meta.getSuccessor(node.getNodeName());
-
-            while (serversTaken.contains(meta.getNode(successor)))
-                successor = meta.getSuccessor(successor);
-
-            list.add(successor);
-
-        }
-
-        zkWatch.setSemaphore(list.size(), meta.getServerRepo());
-
-        notifyNodes(list);
-
-        awaitNodes(1000000000);
     }
 }

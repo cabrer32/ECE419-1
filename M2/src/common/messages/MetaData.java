@@ -22,26 +22,23 @@ public class MetaData implements IMetaData {
         setHashRange();
     }
 
-    private void setHashRange() {
-        TreeSet<IECSNode> coordinators = getAllCoordinator();
-        if (coordinators.size() == 0)
-            return;
-        ((ECSNode) coordinators.last()).setEndingHashValue(((ECSNode) coordinators.first()).getStartingHashValue());
-        Iterator itr = coordinators.iterator();
-        TreeSet<IECSNode> replicas;
-        ECSNode currentNode, nextNode;
-        if (itr.hasNext()) {
-            currentNode = (ECSNode) itr.next();
-            replicas = getReplica(currentNode.getNodeName());
-            while (itr.hasNext()) {
-                nextNode = (ECSNode) itr.next();
-                currentNode.setEndingHashValue(nextNode.getStartingHashValue());
-                for (IECSNode replica : replicas) {
-                    ((ECSNode)replica).setEndingHashValue(nextNode.getStartingHashValue());
-                }
-                currentNode = nextNode;
-            }
+    public void setHashRange() {
+
+        ArrayList<IECSNode> serverArray = new ArrayList<>(serverRepo);
+
+        for(int i = 0; i< serverArray.size(); i++){
+
+            ECSNode node = (ECSNode) serverArray.get(i);
+
+            if(i == (serverArray.size() - 1))
+                node.setEndingHashValue(serverArray.get(0).getNodeHashRange()[0]);
+
+            else
+                node.setEndingHashValue(serverArray.get(i + 1).getNodeHashRange()[0]);
+
         }
+
+        serverRepo = new TreeSet<>(serverArray);
     }
 
     public TreeSet<IECSNode> getServerRepo() {
@@ -51,153 +48,34 @@ public class MetaData implements IMetaData {
 
     @Override
     public String getPredecessor(String name) {
-        TreeSet<IECSNode> nodes = getAllCoordinator();
-        Iterator itr = nodes.iterator();
-        if (nodes.size() == 1) {
-            return ((IECSNode) itr.next()).getNodeName();
-        }
-        int idx = 0;
-        ECSNode prevNode, curNode;
-        while (itr.hasNext()) {
-            prevNode = (ECSNode) itr.next();
-            if (idx == 0 && prevNode.getNodeName().equals(name)) {
-                return nodes.last().getNodeName();
+
+        ArrayList<IECSNode> serverArray = new ArrayList<>(serverRepo);
+
+        for(int i = 0; i< serverArray.size() ; i++){
+            if(serverArray.get(i).getNodeName().equals(name)){
+             if(i == 0) return serverArray.get(serverArray.size() - 1).getNodeName();
+
+             return serverArray.get(i-1).getNodeName();
             }
-            if (itr.hasNext()) {
-                curNode = (ECSNode) itr.next();
-                if (curNode.getNodeName().equals(name)) {
-                    return prevNode.getNodeName();
-                }
-            }
-            idx++;
         }
+
         return null;
     }
 
     @Override
     public String getSuccessor(String name) {
-        TreeSet<IECSNode> nodes = getAllCoordinator();
-        Iterator itr = nodes.iterator();
-        if (nodes.size() == 1) {
-            return ((IECSNode) itr.next()).getNodeName();
-        }
-        int idx = 0;
-        ECSNode node;
-        while (itr.hasNext()) {
-            node = (ECSNode) itr.next();
-            if (node.getNodeName().equals(name)) {
-                if (itr.hasNext()) {
-                    return ((ECSNode)itr.next()).getNodeName();
-                } else if (idx == nodes.size() - 1) {
-                    return nodes.first().getNodeName();
-                } else {
-                    break;
-                }
+
+        ArrayList<IECSNode> serverArray = new ArrayList<>(serverRepo);
+
+        for(int i = 0; i< serverArray.size(); i++){
+            if(serverArray.get(i).getNodeName().equals(name)){
+                if(i == (serverArray.size() - 1)) return serverArray.get(0).getNodeName();
+
+                return serverArray.get(i+1).getNodeName();
             }
-            idx++;
         }
+
         return null;
-    }
-
-    public TreeSet<IECSNode> getAllCoordinator(){
-        TreeSet<IECSNode> coordinators = new TreeSet<>();
-        Iterator itr = serverRepo.iterator();
-        ECSNode node;
-        while (itr.hasNext()) {
-            node = (ECSNode) itr.next();
-            if (node.getNodeType()) {
-                coordinators.add(node);
-            }
-        }
-        return coordinators;
-    }
-
-    @Override
-    public IECSNode getServerByKey(String key, boolean write) {
-        MessageDigest md = null;
-        try {
-            md = MessageDigest.getInstance("MD5");
-            md.update(key.getBytes());
-            byte[] digest = md.digest();
-            String keyHashValue = DatatypeConverter.printHexBinary(digest).toUpperCase();
-            if (write) {
-                for (IECSNode node : serverRepo) {
-                    if (((ECSNode) node).contains(keyHashValue)) {
-                        return node;
-                    }
-                }
-            } else {
-                ArrayList<IECSNode> nodes = new ArrayList<>();
-                for (IECSNode node : serverRepo) {
-                    if (((ECSNode) node).contains(keyHashValue)) {
-                        nodes.add(node);
-                    }
-                }
-                int idx = key.hashCode() % 3;
-                return nodes.get(idx);
-            }
-        } catch (NoSuchAlgorithmException e) {
-            System.out.println(e.getMessage());
-        }
-        return null;
-    }
-
-    @Override
-    public TreeSet<IECSNode> getReplica(String name) {
-        TreeSet<IECSNode> nodes = new TreeSet<>();
-        String startingHashValue = null;
-        for (IECSNode node : serverRepo) {
-            if (node.getNodeName().equals(name) && ((ECSNode) node).getNodeType()) {
-                startingHashValue = ((ECSNode) node).getStartingHashValue();
-            }
-        }
-        if (startingHashValue != null) {
-            for (IECSNode node : serverRepo) {
-                if (((ECSNode) node).getStartingHashValue().equals(startingHashValue) && !((ECSNode) node).getNodeType()) {
-                    nodes.add(node);
-                }
-            }
-        }
-        return nodes;
-    }
-
-    @Override
-    public IECSNode getCoordinator(String name) {
-        IECSNode coordinator = null;
-        String startingHashValue = null;
-        for (IECSNode node : serverRepo) {
-            if (node.getNodeName().equals(name) && !((ECSNode) node).getNodeType()) {
-                startingHashValue = ((ECSNode) node).getStartingHashValue();
-            }
-        }
-        if (startingHashValue != null) {
-            for (IECSNode node : serverRepo) {
-                if (((ECSNode) node).getStartingHashValue().equals(startingHashValue) && ((ECSNode) node).getNodeType()) {
-                    coordinator = node;
-                }
-            }
-        }
-        return coordinator;
-    }
-
-    @Override
-    public boolean hasServer(String name) {
-        for (IECSNode node : serverRepo) {
-            if (node.getNodeName().equals(name)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    @Override
-    public boolean isCoordinator(String name) {
-        for (IECSNode node : serverRepo) {
-            if (node.getNodeName().equals(name) && ((ECSNode) node).getNodeType()) {
-                return true;
-            }
-        }
-        return false;
     }
 
     @Override
@@ -251,6 +129,12 @@ public class MetaData implements IMetaData {
     }
 
     @Override
+    public void addNode(IECSNode node) {
+        serverRepo.add(node);
+    }
+
+
+    @Override
     public IECSNode removeNode(String name) {
         Iterator iter = serverRepo.iterator();
         IECSNode node;
@@ -263,6 +147,26 @@ public class MetaData implements IMetaData {
         }
         return null;
     }
+
+    @Override
+    public ArrayList<String> getReplica(String name){
+
+
+        ArrayList<String> list = new ArrayList<>();
+
+        list.add(getSuccessor(name));
+
+        list.add(getSuccessor(list.get(0)));
+
+
+
+return list;
+
+
+
+
+    }
+
 
 
     public static String MetaToJson(MetaData meta) {

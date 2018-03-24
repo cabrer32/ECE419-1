@@ -2,8 +2,6 @@ package app_kvECS;
 
 import java.io.*;
 import java.util.*;
-import java.util.concurrent.CountDownLatch;
-
 import ecs.ECS;
 import ecs.ECSNode;
 import ecs.IECSNode;
@@ -22,15 +20,15 @@ public class ECSClient implements IECSClient {
     private ECS ecs = null;
 
 
-    public ECSClient(String configFileName, String repicaFileName) {
-        ecs = new ECS(configFileName,repicaFileName);
+    public ECSClient(String zkHostname, int zkPort, String configFileName) {
+        ecs = new ECS(zkHostname, zkPort, configFileName);
     }
 
     @Override
     public boolean start() {
 
         if (ecs != null) {
-            ecs.startAllNodes();
+            ecs.broadcastMeta();
             running = true;
             return true;
         }
@@ -71,6 +69,7 @@ public class ECSClient implements IECSClient {
 
     @Override
     public Collection<IECSNode> addNodes(int count, String cacheStrategy, int cacheSize) {
+
         Collection<IECSNode> serversTaken = setupNodes(count, cacheStrategy, cacheSize);
 
         if (serversTaken != null) {
@@ -84,13 +83,11 @@ public class ECSClient implements IECSClient {
                 logger.error(e.getMessage());
             }
 
+            ecs.addServers((TreeSet<IECSNode>) serversTaken);
+
             if(running) {
-                ecs.startAllNodes();
+                ecs.broadcastMeta();
             }
-
-            ecs.addMeta((TreeSet<IECSNode>) serversTaken);
-
-            ecs.notifySuccessor((TreeSet<IECSNode>) serversTaken);
 
         } else {
             logger.warn("Not enough servers available for allocation!");
@@ -101,27 +98,25 @@ public class ECSClient implements IECSClient {
 
     @Override
     public Collection<IECSNode> setupNodes(int count, String cacheStrategy, int cacheSize) {
-        return ecs.getAvaliableServers(count, cacheStrategy, cacheSize);
+        return ecs.getAvailableServers(count, cacheStrategy, cacheSize);
     }
 
     @Override
     public boolean awaitNodes(int count, int timeout) throws Exception {
-        logger.info("waiting for nodes to be init");
         ecs.awaitNodes(timeout);
         return true;
     }
 
     @Override
     public boolean removeNodes(Collection<String> nodeNames) {
-        ecs.removeNodes(nodeNames);
-        ecs.notifyNodes(nodeNames);
-        return true;
+        return ecs.removeServers(nodeNames, true);
     }
 
     @Override
     public Map<String, IECSNode> getNodes() {
         Map<String, IECSNode> map = new HashMap<>();
-        TreeSet<IECSNode> allRunningNodes = ecs.getNodes();
+        TreeSet<IECSNode> allRunningNodes = ecs.getServers();
+
         for (IECSNode node : allRunningNodes) {
             map.put(node.getNodeName(), node);
         }
@@ -130,7 +125,7 @@ public class ECSClient implements IECSClient {
 
     @Override
     public IECSNode getNodeByKey(String Key) {
-        TreeSet<IECSNode> allRunningNodes = ecs.getNodes();
+        TreeSet<IECSNode> allRunningNodes = ecs.getServers();
         for (IECSNode node : allRunningNodes) {
             if (((ECSNode)node).contains(Key)) {
                 return node;
@@ -315,23 +310,17 @@ public class ECSClient implements IECSClient {
         // TODO
         try {
             new logger.LogSetup("logs/ecs.log", Level.ALL);
-            if (args.length != 2) {
+            if (args.length != 1) {
                 System.out.println("Error! Invalid number of arguments!");
                 System.out.println("Usage: ECS <configuration file>!");
             } else {
                 String configFileName = args[0];
-                String repicaFileName = args[1];
                 File f = new File(configFileName);
                 if (!f.exists() || f.isDirectory()) {
                     System.out.println("Error! Incorrect file path!");
                     System.exit(1);
                 }
-                f = new File(repicaFileName);
-                if (!f.exists() || f.isDirectory()) {
-                    System.out.println("Error! Incorrect file path!");
-                    System.exit(1);
-                }
-                ECSClient ecsClient = new ECSClient(configFileName, repicaFileName);
+                ECSClient ecsClient = new ECSClient("127.0.0.1", 2181, configFileName);
                 ecsClient.run();
             }
         } catch (IOException e) {
