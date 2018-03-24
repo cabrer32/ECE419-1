@@ -150,11 +150,13 @@ public class ECS {
 
         //remove
 
-        zkWatch.setSemaphore(nodeNames.size());
-
         broadcastMeta("E");
 
-        awaitNodes(100000000);
+
+        for (String name : nodeNames) {
+            zkWatch.deleteNode(ROOT_PATH + "/" + name);
+        }
+
 
         //update replica
 

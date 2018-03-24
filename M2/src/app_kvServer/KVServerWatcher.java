@@ -442,7 +442,6 @@ public class KVServerWatcher {
         if (meta.getNode(KVname) == null) {
             kvServer.close();
         }
-        signalECS();
     }
 
 
