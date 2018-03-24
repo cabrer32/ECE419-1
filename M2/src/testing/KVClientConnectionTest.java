@@ -9,7 +9,7 @@ import common.module.ServerThread;
 import junit.framework.TestCase;
 
 
-public class ConnectionTest extends TestCase {
+public class KVClientConnectionTest extends TestCase {
 
     KVServer server = null;
     ServerThread serverThread = null;

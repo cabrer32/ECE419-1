@@ -1,19 +1,14 @@
 package testing;
 
-import java.io.IOException;
-
-import app_kvECS.ECSClient;
-import common.module.ServerThread;
-import ecs.ECS;
-import org.apache.log4j.Level;
-
-import app_kvServer.KVServer;
 import junit.framework.Test;
 import junit.framework.TestSuite;
 import logger.LogSetup;
+import org.apache.log4j.Level;
+import java.io.IOException;
 
 public class AllTests {
 
+<<<<<<< Updated upstream
 
 
     static {
@@ -30,14 +25,21 @@ public class AllTests {
             System.out.println("Cannot initilize logger");
         }finally {
             System.out.println("final");
+=======
+        static {
+            try {
+                new LogSetup("logs/testing/test.log", Level.ALL);
+            } catch (IOException e) {
+                System.out.println("Cannot initilize logger");
+            }
+>>>>>>> Stashed changes
         }
-    }
-
 
     public static Test suite() {
         TestSuite Suite = new TestSuite("Basic Storage ServerTest-Suite");
 
-//        Suite.addTestSuite(ConnectionTest.class);
+        Suite.addTestSuite(ECSClientTest.class);
+//        Suite.addTestSuite(KVClientConnectionTest.class);
 //        Suite.addTestSuite(KVStoreTest.class);
 //        Suite.addTestSuite(KVServerTest.class);
 //        Suite.addTestSuite(ECSNodeTest.class);

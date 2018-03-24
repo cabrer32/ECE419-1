@@ -1,68 +1,96 @@
 package testing;
 
 import app_kvECS.ECSClient;
-import ecs.ECSNode;
 import ecs.IECSNode;
 import junit.framework.TestCase;
-import org.junit.Test;
+import org.junit.*;
 
-import java.rmi.server.ExportException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 public class ECSClientTest extends TestCase {
 
-
     private ECSClient ecsClient = null;
 
-    @Override
+    @BeforeClass
     public void setUp() {
+<<<<<<< Updated upstream
 
         ecsClient = new ECSClient("127.0.0.1",2181,"ecs.config");
+=======
+        ecsClient = new ECSClient("ecs.config","pool.config");
+>>>>>>> Stashed changes
     }
 
-    @Override
-    protected void tearDown() {
-        ecsClient.shutdown();
-        System.out.println("Server has been teared down");
+    @AfterClass
+    public void tearDown() {
+        ecsClient = null;
     }
 
     @Test
     public void testECS() {
-        try {
-            boolean s = false;
-            /** test add nodes */
-            Collection<IECSNode> nodes = ecsClient.addNodes(1, "LFU", 50);
 
-            if (nodes == null || nodes.size() != 1)
-                assertTrue(false);
+        // for initialization and test result purpose
+        int[] addSizes = {1, 2};
+        String cacheStrategy = "None";
+        int cacheSizes = 100;
+        String[] nodeNames = {"server8", "server7", "server6"};
 
+        /**
+         * addnodes() before start()
+         */
+        Collection<IECSNode> firstAdd = ecsClient.addNodes(addSizes[0], cacheStrategy, cacheSizes);
+        assertNotNull("addNodes() failed.", firstAdd);
+        assertEquals("addNodes() failed.", firstAdd.size(), addSizes[0]);
 
-            /** test remove nodes */
-            Collection<String> removenodes = new ArrayList<>();
+        /**
+         * start()
+         */
+        assertTrue("start() failed.", ecsClient.start());
 
-            removenodes.add("server8");
+        /**
+         * addnodes() after start()
+         */
+        Collection<IECSNode> secondAdd = ecsClient.addNodes(addSizes[1], cacheStrategy, cacheSizes);
+        assertNotNull("addNodes() failed.", secondAdd);
+        assertEquals("addNodes() failed.", secondAdd.size(), addSizes[1]);
 
-            s = ecsClient.removeNodes(removenodes);
-            assertTrue(s);
-
-            /** test get nodes */
-            Map<String, IECSNode> maps = ecsClient.getNodes();
-
-            assertTrue(maps != null);
-
-
-            /** test get nodes */
-            IECSNode node = ecsClient.getNodeByKey("00000000000000000000000000000000");
-
-            assertTrue(node == null);
-
-
-        } catch (Exception e) {
-            System.out.println("Error happening " + e);
-            e.printStackTrace();
+        /**
+         * getNodes()
+         */
+        Map<String, IECSNode> nodes = ecsClient.getNodes();
+        assertNotNull("getNodes() failed.", nodes);
+        Set<String> resNodeNames = nodes.keySet();
+        for (String nodeName : nodeNames) {
+            assertTrue("getNodes() failed.", resNodeNames.contains(nodeName));
         }
+
+        /**
+         * getNodeByKey()
+         */
+        IECSNode node = ecsClient.getNodeByKey("00000000000000000000000000000000");
+        assertNotNull("getNodeByKey() failed.", node);
+        assertTrue(node.getNodeName().equals(nodeNames[0]));
+        node = ecsClient.getNodeByKey("00000000000000000000000000000000");
+        assertNotNull("getNodeByKey() failed.", node);
+        assertTrue(node.getNodeName().equals(nodeNames[1]));
+        node = ecsClient.getNodeByKey("00000000000000000000000000000000");
+        assertNotNull("getNodeByKey() failed.", node);
+        assertTrue(node.getNodeName().equals(nodeNames[2]));
+
+        /**
+         * removeNodes()
+         */
+        Collection<String> removeNodes = new ArrayList<>();
+        removeNodes.add(nodeNames[0]);
+        assertTrue("removeNodes() failed.", ecsClient.removeNodes(removeNodes));
+
+        /**
+         * shutdown()
+         */
+        assertTrue("shutdown() failed.", ecsClient.shutdown());
+
     }
 }

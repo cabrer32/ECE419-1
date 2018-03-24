@@ -22,6 +22,7 @@ public class MetaData implements IMetaData {
         setHashRange();
     }
 
+<<<<<<< Updated upstream
     public void setHashRange() {
 
         ArrayList<IECSNode> serverArray = new ArrayList<>(serverRepo);
@@ -36,6 +37,27 @@ public class MetaData implements IMetaData {
             else
                 node.setEndingHashValue(serverArray.get(i + 1).getNodeHashRange()[0]);
 
+=======
+    private void setHashRange() {
+        TreeSet<IECSNode> coordinators = getAllCoordinator();
+        if (coordinators.size() == 0)
+            return;
+        ((ECSNode) coordinators.last()).setEndingHashValue(((ECSNode) coordinators.first()).getStartingHashValue());
+        Iterator itr = coordinators.iterator();
+        TreeSet<IECSNode> replicas;
+        ECSNode currentNode, nextNode;
+        if (itr.hasNext()) {
+            currentNode = (ECSNode) itr.next();
+            replicas = getReplica(currentNode.getNodeName());
+            while (itr.hasNext()) {
+                nextNode = (ECSNode) itr.next();
+                currentNode.setEndingHashValue(nextNode.getStartingHashValue());
+                for (IECSNode replica : replicas) {
+                    ((ECSNode) replica).setEndingHashValue(nextNode.getStartingHashValue());
+                }
+                currentNode = nextNode;
+            }
+>>>>>>> Stashed changes
         }
 
         serverRepo = new TreeSet<>(serverArray);
@@ -49,11 +71,51 @@ public class MetaData implements IMetaData {
     @Override
     public String getPredecessor(String name) {
 
+<<<<<<< Updated upstream
         ArrayList<IECSNode> serverArray = new ArrayList<>(serverRepo);
 
         for(int i = 0; i< serverArray.size() ; i++){
             if(serverArray.get(i).getNodeName().equals(name)){
              if(i == 0) return serverArray.get(serverArray.size() - 1).getNodeName();
+=======
+    @Override
+    public String getSuccessor(String name) {
+        TreeSet<IECSNode> nodes = getAllCoordinator();
+        Iterator itr = nodes.iterator();
+        if (nodes.size() == 1) {
+            return ((IECSNode) itr.next()).getNodeName();
+        }
+        int idx = 0;
+        ECSNode node;
+        while (itr.hasNext()) {
+            node = (ECSNode) itr.next();
+            if (node.getNodeName().equals(name)) {
+                if (itr.hasNext()) {
+                    return ((ECSNode) itr.next()).getNodeName();
+                } else if (idx == nodes.size() - 1) {
+                    return nodes.first().getNodeName();
+                } else {
+                    break;
+                }
+            }
+            idx++;
+        }
+        return null;
+    }
+
+    public TreeSet<IECSNode> getAllCoordinator() {
+        TreeSet<IECSNode> coordinators = new TreeSet<>();
+        Iterator itr = serverRepo.iterator();
+        ECSNode node;
+        while (itr.hasNext()) {
+            node = (ECSNode) itr.next();
+            if (node.getNodeType()) {
+                coordinators.add(node);
+            }
+        }
+        return coordinators;
+    }
+>>>>>>> Stashed changes
 
              return serverArray.get(i-1).getNodeName();
             }
@@ -96,21 +158,21 @@ public class MetaData implements IMetaData {
 
         ECSNode pre = (ECSNode) this.getNode(predecessor);
 
-        int flag = suc.compareHash(pre) ;
+        int flag = suc.compareHash(pre);
 
-        if(flag == 0)
+        if (flag == 0)
             return null;
 
         ArrayList<IECSNode> nodes = new ArrayList<>();
 
         Iterator itr = serverRepo.iterator();
 
-        while(itr.hasNext()){
+        while (itr.hasNext()) {
 
-            ECSNode node =  (ECSNode) itr.next();
+            ECSNode node = (ECSNode) itr.next();
 
-            if(((flag > 0) && (node.compareHash(pre) > 0) && (node.compareHash(suc) < 0))  ||
-                    (((flag < 0) && (node.compareHash(pre) > 0) || (node.compareHash(suc) < 0))  )){
+            if (((flag > 0) && (node.compareHash(pre) > 0) && (node.compareHash(suc) < 0)) ||
+                    (((flag < 0) && (node.compareHash(pre) > 0) || (node.compareHash(suc) < 0)))) {
                 nodes.add(node);
             }
         }
@@ -174,7 +236,7 @@ return list;
             Type listType = new TypeToken<TreeSet<ECSNode>>() {
             }.getType();
 
-            return  new Gson().toJson(meta.getServerRepo(), listType);
+            return new Gson().toJson(meta.getServerRepo(), listType);
         } catch (JsonSyntaxException e) {
             System.out.println("Invalid Message syntax " + e.getMessage());
         }
