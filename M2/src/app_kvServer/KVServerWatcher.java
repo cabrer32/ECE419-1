@@ -364,6 +364,8 @@ public class KVServerWatcher {
             case "F":
                 logger.info("--- Update to new meta data ---");
                 kvServer.setMetaData(meta);
+                kvServer.replicas = meta.getReplica(KVname);
+                kvServer.predecessor = meta.getPredecessor(KVname);
                 break;
             default:
                 logger.error("Cannot recognize the meta " + action);
@@ -411,11 +413,11 @@ public class KVServerWatcher {
             list.addAll(newReplica);
         }
         else{
-            if(oldReplica.get(0) != newReplica.get(0) && oldReplica.get(1) != newReplica.get(0)){
+            if(!(oldReplica.get(0).equals(newReplica.get(0)) || oldReplica.get(1).equals(newReplica.get(0)))){
                 list.add(newReplica.get(0));
             }
 
-            if(oldReplica.get(0) != newReplica.get(1) && oldReplica.get(1) != newReplica.get(1)){
+            if(!(oldReplica.get(0).equals(newReplica.get(1)) || oldReplica.get(1).equals(newReplica.get(1)))){
                 list.add(newReplica.get(1));
             }
 
@@ -458,14 +460,12 @@ public class KVServerWatcher {
 
         Iterator it = map.entrySet().iterator();
 
-        logger.info("###Start transfering data to " + targetName + " with size " + map.size() + " ###");
+        logger.info("Start transfering data to " + targetName + " with size " + map.size());
 
         while (it.hasNext()) {
             Map.Entry<String, String> kv = (Map.Entry<String, String>) it.next();
 
-
             logger.info("Sending key => " + kv.getKey() + " to " + targetName);
-
 
             dataSemaphore = new CountDownLatch(1);
 

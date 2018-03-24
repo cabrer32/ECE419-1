@@ -170,7 +170,7 @@ public class KVServer implements IKVServer {
 
     public void DBput(String key, String value) {
         try {
-            logger.info("put to DB " + key);
+            logger.debug("put to DB " + key);
             db.putKV(key, value);
         } catch (IOException e) {
             logger.error("Cannot write to file " + e);
@@ -393,7 +393,7 @@ public class KVServer implements IKVServer {
 
             zkWatch.moveData(map,targetName);
 
-            logger.info("Removing data");
+            logger.debug("Removing data");
 
             db.removeRangeKV(hashRange);
         } catch (Exception e) {
