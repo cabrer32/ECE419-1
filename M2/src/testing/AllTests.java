@@ -42,11 +42,11 @@ public class AllTests {
         TestSuite Suite = new TestSuite("Basic Storage ServerTest-Suite");
         // inherit from M1
         Suite.addTestSuite(ConnectionTest.class);
-        Suite.addTestSuite(InteractionTest.class);
+       // Suite.addTestSuite(InteractionTest.class);
 
         // additional test case after M1
-//        Suite.addTestSuite(KVClientTest.class);
-        Suite.addTestSuite(ECSClientTest.class);
+        Suite.addTestSuite(KVClientTest.class);
+        //Suite.addTestSuite(ECSClientTest.class);
 //        Suite.addTestSuite(KVCacheTest.class);
 //        Suite.addTestSuite(KVServerTest.class);
 //        Suite.addTestSuite(KVStoreTest.class);

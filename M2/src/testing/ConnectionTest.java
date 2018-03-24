@@ -54,38 +54,7 @@ public class ConnectionTest extends TestCase {
 		assertTrue(ex instanceof IllegalArgumentException);
 	}
 
-	public void testMultiClients() {
-		Exception ex = null;
 
-		ArrayList<KVStore> clients = new ArrayList<>();
-
-		try {
-
-
-			for (int i = 0; i <= 5; i++) {
-				KVStore kvClient = new KVStore("localhost", 50007);
-				kvClient.connect();
-				clients.add(kvClient);
-			}
-
-			for (KVStore client : clients) {
-				client.put("hi", "hi");
-			}
-
-
-			for (KVStore client : clients) {
-				assertTrue("get operation failed ", client.get("hi").getValue()!=null);
-			}
-
-			for (KVStore client : clients) {
-				client.disconnect();
-			}
-
-		} catch (Exception e) {
-			ex = e;
-		}
-
-	}
 	
 }
 
