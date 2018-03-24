@@ -171,21 +171,17 @@ public class ECSWatcher {
     /**
      * delete node
      */
-    public boolean deleteNode(String name) {
+    public boolean deleteNode(String path) {
         try {
-            String path = CHILDREN_PATH + name;
 
-            if (zk.exists(path, false) != null){
-                if(zk.exists(path + "/data", false) != null)
-                    this.zk.delete(path + "/data", -1);
+            if (zk.exists(path, false) != null) {
                 this.zk.delete(path, -1);
             }
 
-            logger.info("Successfully delete Node for server " + name);
             return true;
 
         } catch (Exception e) {
-            logger.error("Failed to delete Node for server " + name);
+            logger.error("Failed to delete Node at path " + path);
             return false;
         }
     }
@@ -238,17 +234,24 @@ public class ECSWatcher {
         logger.info("Deleting all nodes");
 
         try {
-            this.zk.exists(ROOT_PATH, false);
+            if(this.zk.exists(ROOT_PATH, false) == null)
+                return true;
+
+            for (IECSNode node : serverRepoTaken) {
+                deleteNode(CHILDREN_PATH + node.getNodeName() + "/data");
+                deleteNode(CHILDREN_PATH + node.getNodeName());
+            }
+
+            deleteNode(ROOT_PATH);
+
+            logger.info("Done");
+
+            return true;
         } catch (Exception e) {
-            logger.error("Cannot unwatch children");
+            logger.error("Cannot Do ZK operation");
+            return false;
         }
 
-        for (IECSNode node : serverRepoTaken) {
-            deleteNode(node.getNodeName());
-        }
 
-        this.deleteNode(ROOT_PATH);
-
-        return true;
     }
 }

@@ -20,7 +20,7 @@ public class AllTests {
         try {
             new LogSetup("logs/testing/test.log", Level.ALL);
 
-            ECSClient ecsClient = new ECSClient("ecs.config","pool.config");
+            ECSClient ecsClient = new ECSClient("127.0.0.1",2181,"ecs.config");
 
             ecsClient.addNodes(2, "None", 100);
 
