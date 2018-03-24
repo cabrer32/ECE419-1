@@ -47,7 +47,7 @@ public class KVDB {
 
 
     private void initializeDB() throws IOException {
-        logger.info("Initialize DB... ");
+
         lockList = new ArrayList<>();
 
         File root = new File("KVDB");
@@ -56,7 +56,7 @@ public class KVDB {
         File DB = new File("KVDB/" + name);
 
         if (!DB.exists() || DB.list().length == 0) {
-            logger.info("Make Dir... ");
+
             DB.mkdir();
             //Create two files into DB directory
             for (int i = 0; i < 2; i++) {
@@ -65,7 +65,6 @@ public class KVDB {
                 ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 
                 DBfile.createNewFile();
-                logger.info("Create File... ");
 
                 //Create RandomAccessFile associate with the file
                 RandomAccessFile file = new RandomAccessFile(DBfile, "rw");
@@ -81,18 +80,18 @@ public class KVDB {
             }
 
             fileNumber = 2;
-            logger.info("Done Making Dir... ");
+
         } else {
-            logger.info("Read Dir... ");
+
             for (int i = 0; i < DB.list().length; i++) {
 
                 ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
                 lockList.add(lock);
             }
             fileNumber = DB.list().length;
-            logger.info("Done Reading Dir... ");
+
         }
-        logger.info("Done Initializing DB... ");
+
     }
 
 
