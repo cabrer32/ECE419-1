@@ -84,6 +84,7 @@ public class ECSWatcher {
 
                             logger.info("Children Node Changed");
                             awaitSemaphore.countDown();
+                            break;
                         default:
                             logger.info("Change is not related");
                             break;
@@ -113,7 +114,6 @@ public class ECSWatcher {
                         case NodeDataChanged:
                             logger.info("Children Node Changed");
                             awaitSemaphore.countDown();
-
                             break;
 
                         default:
@@ -221,7 +221,7 @@ public class ECSWatcher {
 
         try {
             ifNotTimeout = awaitSemaphore.await(timeout, TimeUnit.MILLISECONDS);
-            logger.info("Finish waiting nodes status is" + ifNotTimeout);
+            logger.info("Finish waiting nodes status is " + ifNotTimeout);
         } catch (InterruptedException e) {
             logger.error("Await Nodes has been interrupted!");
         }

@@ -24,12 +24,11 @@ public class ECS {
     private MetaData meta;
     private TreeSet<IECSNode> avaServer = new TreeSet<>();
 
+    private String zkHostname;
+    private int zkPort;
 
-    private static final String LOCAL_HOST = "127.0.0.1";
-    private static final String CONNECTION_ADDR_HOST = "127.0.0.1";
-    private static final String CONNECTION_ADDR_PORT = "2181";
     private static final String ROOT_PATH = "/ecs";
-    private static final String NODE_PATH_SUFFIX = "/ecs/";
+    private static final String CHILDREN_PATH_SUFFIX = "/ecs/";
 
     /**
      * Initialize
@@ -39,10 +38,13 @@ public class ECS {
 
         Logger.getLogger("org.apache.zookeeper").setLevel(Level.ERROR);
 
+        this.zkHostname = zkHostname;
+        this.zkPort = zkPort;
+
         zkWatch = new ECSWatcher();
         zkWatch.init(zkHostname, zkPort);
 
-        meta = new MetaData(new TreeSet<>());
+        meta = new MetaData(new TreeSet<IECSNode>());
     }
 
     private void loadFile(String configFileName) {
@@ -89,8 +91,8 @@ public class ECS {
         for (Iterator<IECSNode> iterator = list.iterator(); iterator.hasNext(); ) {
             ECSNode node = (ECSNode) iterator.next();
 
-            String script = String.format(SCRIPT_TEXT, LOCAL_HOST, node.getNodeName(), CONNECTION_ADDR_HOST,
-                    CONNECTION_ADDR_PORT, node.getNodePort(), node.getCacheStrategy(), node.getCachesize());
+            String script = String.format(SCRIPT_TEXT, node.getNodeHost(), node.getNodeName(), zkHostname,
+                    zkPort, node.getNodePort(), node.getCacheStrategy(), node.getCachesize());
 
             Runtime run = Runtime.getRuntime();
             try {
@@ -194,7 +196,7 @@ public class ECS {
         zkWatch.setSemaphore(list.size(), list);
 
         for (String name : list) {
-            zkWatch.writeData(NODE_PATH_SUFFIX + name, MetaData.MetaToJson(meta));
+            zkWatch.writeData(CHILDREN_PATH_SUFFIX + name, MetaData.MetaToJson(meta));
         }
 
 
