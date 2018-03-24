@@ -1,6 +1,10 @@
 package testing;
 
+import app_kvClient.KVClient;
 import app_kvECS.ECSClient;
+import app_kvServer.Cache.KVCache;
+import common.messages.MetaData;
+import common.module.CommunicationModule;
 import junit.framework.Test;
 import junit.framework.TestSuite;
 import logger.LogSetup;
@@ -36,16 +40,21 @@ public class AllTests {
 
     public static Test suite() {
         TestSuite Suite = new TestSuite("Basic Storage ServerTest-Suite");
+        // inherit from M1
+        Suite.addTestSuite(ConnectionTest.class);
+        Suite.addTestSuite(InteractionTest.class);
 
+        // additional test case after M1
+//        Suite.addTestSuite(KVClientTest.class);
         Suite.addTestSuite(ECSClientTest.class);
-//        Suite.addTestSuite(KVClientConnectionTest.class);
-//        Suite.addTestSuite(KVStoreTest.class);
+//        Suite.addTestSuite(KVCacheTest.class);
 //        Suite.addTestSuite(KVServerTest.class);
+//        Suite.addTestSuite(KVStoreTest.class);
+//        Suite.addTestSuite(MetaDataTest.class);
+//        Suite.addTestSuite(KVMessageTest.class);
+//        Suite.addTestSuite(CommunicationModuleTest.class);
 //        Suite.addTestSuite(ECSNodeTest.class);
-//        Suite.addTestSuite(ECSClientTest.class);
-//        Suite.addTestSuite(CacheTest.class);
 //        Suite.addTestSuite(PerformanceTest.class);
-//
 
         return Suite;
     }

@@ -8,7 +8,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-public class CacheTest extends TestCase {
+public class KVCacheTest extends TestCase {
 
     KVServer server = null;
     ServerThread serverThread = null;

@@ -29,10 +29,10 @@ public class ECSClientTest extends TestCase {
     public void testECS() {
 
         // for initialization and test result purpose
-        int[] addSizes = {1, 2};
+        int[] addSizes = {3, 2};
         String cacheStrategy = "None";
         int cacheSizes = 100;
-        String[] nodeNames = {"server8", "server6", "server1"};
+        String[] nodeNames = {"server8", "server6", "server1", "server7", "server4"};
 
         /**
          * addnodes() before start()
