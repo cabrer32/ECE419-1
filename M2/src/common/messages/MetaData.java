@@ -96,21 +96,21 @@ public class MetaData implements IMetaData {
 
         ECSNode pre = (ECSNode) this.getNode(predecessor);
 
-        int flag = suc.compareHash(pre) ;
+        int flag = suc.compareHash(pre);
 
-        if(flag == 0)
+        if (flag == 0)
             return null;
 
         ArrayList<IECSNode> nodes = new ArrayList<>();
 
         Iterator itr = serverRepo.iterator();
 
-        while(itr.hasNext()){
+        while (itr.hasNext()) {
 
-            ECSNode node =  (ECSNode) itr.next();
+            ECSNode node = (ECSNode) itr.next();
 
-            if(((flag > 0) && (node.compareHash(pre) > 0) && (node.compareHash(suc) < 0))  ||
-                    (((flag < 0) && (node.compareHash(pre) > 0) || (node.compareHash(suc) < 0))  )){
+            if (((flag > 0) && (node.compareHash(pre) > 0) && (node.compareHash(suc) < 0)) ||
+                    (((flag < 0) && (node.compareHash(pre) > 0) || (node.compareHash(suc) < 0)))) {
                 nodes.add(node);
             }
         }
@@ -174,7 +174,7 @@ return list;
             Type listType = new TypeToken<TreeSet<ECSNode>>() {
             }.getType();
 
-            return  new Gson().toJson(meta.getServerRepo(), listType);
+            return new Gson().toJson(meta.getServerRepo(), listType);
         } catch (JsonSyntaxException e) {
             System.out.println("Invalid Message syntax " + e.getMessage());
         }

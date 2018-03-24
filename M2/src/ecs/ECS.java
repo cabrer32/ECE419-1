@@ -1,6 +1,5 @@
 package ecs;
 
-import com.google.gson.Gson;
 import common.messages.MetaData;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
@@ -17,7 +16,7 @@ public class ECS {
     private static Logger logger = Logger.getRootLogger();
     //private static final String SCRIPT_TEXT = "ssh -n %s nohup java -jar /m2-server.jar %s %s %s %s %s %s &";
     private static final String SCRIPT_TEXT = "ssh -n %s nohup java -jar /Users/wuqili/Desktop/ECE419/M2/m2-server.jar %s %s %s %s %s %s &";
-    //  private static final String SCRIPT_TEXT = "ssh -n %s nohup java -jar /Users/pannnnn/UTcourses/ECE419/Milestones/ece419/M2/m2-server.jar %s %s %s %s %s %s &";
+    //private static final String SCRIPT_TEXT = "ssh -n %s nohup java -jar /Users/pannnnn/UTcourses/ECE419/Milestones/ece419/M2/m2-server.jar %s %s %s %s %s %s &";
 
     private ECSWatcher zkWatch;
 
