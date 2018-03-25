@@ -232,16 +232,8 @@ public class ECS {
     public boolean shutdown() {
         removeDetectors(meta.getNameList());
 
-        logger.info("--- Stopping servers ---");
-
-        zkWatch.setSemaphore(meta.getServerRepo().size());
-
         broadcastMeta("G");
-
-        awaitNodes(100000000);
-
-        logger.info("- Done! -");
-
+        
         boolean flag = zkWatch.deleteAllNodes(meta.getServerRepo());
         zkWatch.releaseConnection();
         return flag;
