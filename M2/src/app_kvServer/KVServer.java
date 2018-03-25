@@ -337,7 +337,9 @@ public class KVServer implements IKVServer {
                 client.stop();
             }
             serverSocket.close();
-            zkWatch.releaseConnection();
+            if (zkWatch != null) {
+                zkWatch.releaseConnection();
+            }
         } catch (IOException e) {
             logger.error("Error! " +
                     "Unable to close sockets on port: " + port, e);
@@ -353,7 +355,9 @@ public class KVServer implements IKVServer {
                 client.stop();
             }
             serverSocket.close();
-            zkWatch.releaseConnection();
+            if (zkWatch != null) {
+                zkWatch.releaseConnection();
+            }
         } catch (IOException e) {
             logger.error("Error! " +
                     "Unable to close sockets on port: " + port, e);

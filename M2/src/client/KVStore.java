@@ -122,8 +122,9 @@ public class KVStore implements KVCommInterface {
             for (CommunicationModule ci : communicationModules.values()) {
                 ci.disconnect();
             }
-
-            listener.handleStatus(ClientSocketListener.SocketStatus.DISCONNECTED);
+            if (listener != null) {
+                listener.handleStatus(ClientSocketListener.SocketStatus.DISCONNECTED);
+            }
 
         } catch (IOException ioe) {
             logger.error("Unable to close connection!");
