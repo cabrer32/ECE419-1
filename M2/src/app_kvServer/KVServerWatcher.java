@@ -191,12 +191,6 @@ public class KVServerWatcher {
     public void releaseConnection() {
         logger.info("Start releasing connections");
 
-        int i = 0;
-        while(!deleteNode(nodePath)) {
-            deleteNode(nodePath + "/data" + i);
-            i++;
-        }
-
         if (this.zk != null) {
             try {
                 this.zk.close();

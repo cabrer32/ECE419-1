@@ -15,8 +15,8 @@ import java.util.*;
 public class ECS {
     private static Logger logger = Logger.getRootLogger();
     //private static final String SCRIPT_TEXT = "ssh -n %s nohup java -jar /m2-server.jar %s %s %s %s %s %s &";
-//    private static final String SCRIPT_TEXT = "ssh -n %s nohup java -jar /Users/wuqili/Desktop/ECE419/M2/m2-server.jar %s %s %s %s %s %s &";
-    private static final String SCRIPT_TEXT = "ssh -n %s nohup java -jar /Users/pannnnn/UTcourses/ECE419/Milestones/ece419/M2/m2-server.jar %s %s %s %s %s %s &";
+    private static final String SCRIPT_TEXT = "ssh -n %s nohup java -jar /Users/wuqili/Desktop/ECE419/M2/m2-server.jar %s %s %s %s %s %s &";
+//    private static final String SCRIPT_TEXT = "ssh -n %s nohup java -jar /Users/pannnnn/UTcourses/ECE419/Milestones/ece419/M2/m2-server.jar %s %s %s %s %s %s &";
 
     private ECSWatcher zkWatch;
 
@@ -237,8 +237,6 @@ public class ECS {
 
     public boolean shutdown() {
         removeDetectors(meta.getNameList());
-
-        broadcastMeta("G");
 
         boolean flag = zkWatch.deleteAllNodes(meta.getServerRepo());
         zkWatch.releaseConnection();
