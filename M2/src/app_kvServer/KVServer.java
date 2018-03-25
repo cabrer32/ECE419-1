@@ -71,6 +71,9 @@ public class KVServer implements IKVServer {
      */
     MetaData meta;
 
+    String predecessor = null;
+    ArrayList<String> replicas = null;
+
 
     /**
      * Start KV Server with selected name
@@ -138,7 +141,7 @@ public class KVServer implements IKVServer {
 
         //Initialize file system database
         try {
-            logger.info("Creating DB " + name);
+            logger.debug("Creating DB " + name);
             db = new KVDB(name);
 
         } catch (IOException e) {
@@ -147,6 +150,7 @@ public class KVServer implements IKVServer {
         }
 
 
+        logger.info("Done");
 
         running = true;
     }
@@ -166,7 +170,7 @@ public class KVServer implements IKVServer {
 
     public void DBput(String key, String value) {
         try {
-            logger.info("put to DB " + key);
+            logger.debug("put to DB " + key);
             db.putKV(key, value);
         } catch (IOException e) {
             logger.error("Cannot write to file " + e);
@@ -387,11 +391,9 @@ public class KVServer implements IKVServer {
         try {
             HashMap<String, String> map = db.getRangeKV(hashRange);
 
-            logger.info("Start transfering data to " + targetName + " with size " + map.size());
-
             zkWatch.moveData(map,targetName);
 
-            logger.info("Removing data");
+            logger.debug("Removing data");
 
             db.removeRangeKV(hashRange);
         } catch (Exception e) {

@@ -32,6 +32,7 @@ public class ECSClient implements IECSClient {
         if (ecs != null) {
             ecs.start();
             running = true;
+            newService = false;
             return true;
         }
         return false;
@@ -86,9 +87,11 @@ public class ECSClient implements IECSClient {
             }
 
             if(!newService){
-                ecs.updateServerData(serversTaken.size());
-                ecs.updateServerReplica(serversTaken.size() * 4);
+                ecs.updateServerData();
+                ecs.updateServerReplica();
             }
+
+            ecs.updateServerMeta();
 
             if(running) {
                 start();

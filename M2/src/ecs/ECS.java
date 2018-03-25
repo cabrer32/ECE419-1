@@ -27,7 +27,6 @@ public class ECS {
     private int zkPort;
 
     private static final String ROOT_PATH = "/ecs";
-    private static final String CHILDREN_PATH_SUFFIX = "/ecs/";
 
     /**
      * Initialize
@@ -103,27 +102,38 @@ public class ECS {
         }
     }
 
+    public void updateServerMeta(){
+        logger.info("--- Updating server meta ---");
+
+        broadcastMeta("F");
+
+        logger.info("- Done! -");
+    }
 
 
-    public void updateServerData(int num){
-        logger.info("--- updating server data ---");
+    public void updateServerData(){
+        logger.info("--- Updating server data ---");
 
-        zkWatch.setSemaphore(num);
+        zkWatch.setSemaphore(meta.getServerRepo().size());
 
         broadcastMeta("C");
 
         awaitNodes(100000000);
+
+        logger.info("- Done! -");
     }
 
 
-    public void updateServerReplica(int num){
-        logger.info("--- updating server replica ---");
+    public void updateServerReplica(){
+        logger.info("--- Updating server replica ---");
 
-        zkWatch.setSemaphore(num);
+        zkWatch.setSemaphore(meta.getServerRepo().size());
 
         broadcastMeta("D");
 
         awaitNodes(100000000);
+
+        logger.info("- Done! -");
     }
 
 
@@ -140,16 +150,17 @@ public class ECS {
 
         //remove
 
-        zkWatch.setSemaphore(nodeNames.size());
-
         broadcastMeta("E");
 
-        awaitNodes(100000000);
 
-        //
+        for (String name : nodeNames) {
+            zkWatch.deleteNode(ROOT_PATH + "/" + name);
+        }
 
 
-        updateServerReplica(nodeNames.size() * 2);
+        //update replica
+
+        updateServerReplica();
 
         return true;
     }

@@ -103,10 +103,12 @@ public class ECSWatcher {
                         case NodeCreated:
                             logger.info("Children Node Created at " + path);
                             awaitSemaphore.countDown();
+                            exists(path,this);
                             break;
                         case NodeDataChanged:
                             logger.info("Children Node signal received at " + path);
                             awaitSemaphore.countDown();
+                            exists(path,this);
                             break;
 
                         default:
@@ -224,7 +226,7 @@ public class ECSWatcher {
             if(ifNotTimeout)
                 logger.info("All Server Signal received.");
             else
-                logger.info("Timeout while waiting Server Signal.");
+                logger.error("Timeout while waiting Server Signal.");
 
         } catch (InterruptedException e) {
             logger.error("Await Nodes has been interrupted!");
@@ -242,7 +244,6 @@ public class ECSWatcher {
                 return true;
 
             for (IECSNode node : serverRepoTaken) {
-                deleteNode(CHILDREN_PATH + node.getNodeName() + "/data");
                 deleteNode(CHILDREN_PATH + node.getNodeName());
             }
 
@@ -254,7 +255,5 @@ public class ECSWatcher {
             logger.error("Cannot Do ZK operation");
             return false;
         }
-
-
     }
 }

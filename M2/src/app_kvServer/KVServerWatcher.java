@@ -337,7 +337,8 @@ public class KVServerWatcher {
 
     void executeAction(String action, MetaData meta) {
 
-        logger.info("#################### Get new Meat data ####################");
+        logger.info("#################### New command from ECS ####################");
+
 
         switch (action) {
             case "A":
@@ -363,10 +364,13 @@ public class KVServerWatcher {
             case "F":
                 logger.info("--- Update to new meta data ---");
                 kvServer.setMetaData(meta);
+                kvServer.replicas = meta.getReplica(KVname);
+                kvServer.predecessor = meta.getPredecessor(KVname);
                 break;
             default:
                 logger.error("Cannot recognize the meta " + action);
         }
+
         logger.info("--- Done! ---");
 
     }
@@ -374,12 +378,12 @@ public class KVServerWatcher {
 
     void reRangeNewServers(MetaData meta) {
 
-        MetaData oldMeta = kvServer.getMetaData();
+        String oldPredecessor = kvServer.predecessor;
 
-        if (!meta.getPredecessor(KVname).equals(oldMeta.getPredecessor(KVname))) {
+        if (oldPredecessor != null && !meta.getPredecessor(KVname).equals(oldPredecessor)) {
             logger.info("Need to move data to new predecessors");
 
-            ArrayList<IECSNode> targets = meta.getServerBetween(oldMeta.getPredecessor(KVname), KVname);
+            ArrayList<IECSNode> targets = meta.getServerBetween(oldPredecessor, KVname);
 
             for (IECSNode node : targets) {
 
@@ -388,47 +392,55 @@ public class KVServerWatcher {
                 } catch (Exception e) {
                     logger.error("Cannot move data to " + node.getNodeName() + " " + e);
                 }
-                signalECS();
+
             }
         }
+
+        kvServer.predecessor = meta.getPredecessor(KVname);
+
+        signalECS();
     }
 
     void reRangeNewReplicas(MetaData meta) {
-        MetaData oldMeta = kvServer.getMetaData();
 
-        ArrayList<String> oldReplica = oldMeta.getReplica(KVname);
+
+        ArrayList<String> oldReplica = kvServer.replicas;
         ArrayList<String> newReplica = meta.getReplica(KVname);
 
+        ArrayList<String> list = new ArrayList<>();
 
-        //Check change for its replica
-        if (!oldReplica.containsAll(newReplica)) {
-
-            ArrayList<String> t_oldReplica = new ArrayList<>(oldReplica);
-
-            oldReplica.removeAll(newReplica);
-
-            newReplica.removeAll(t_oldReplica);
-
-            newReplica.addAll(oldReplica);
-
-            for (String node : newReplica) {
-
-                try {
-                    kvServer.moveData(meta.getNode(node).getNodeHashRange(), node);
-                } catch (Exception e) {
-                    logger.error("Cannot move data to " + node + " " + e);
-                }
-                signalECS();
+        if(oldReplica == null){
+            list.addAll(newReplica);
+        }
+        else{
+            if(!(oldReplica.get(0).equals(newReplica.get(0)) || oldReplica.get(1).equals(newReplica.get(0)))){
+                list.add(newReplica.get(0));
             }
+
+            if(!(oldReplica.get(0).equals(newReplica.get(1)) || oldReplica.get(1).equals(newReplica.get(1)))){
+                list.add(newReplica.get(1));
+            }
+
         }
 
 
+        for (String node : list) {
+
+            try {
+                kvServer.moveData(meta.getNode(node).getNodeHashRange(), node);
+            } catch (Exception e) {
+                logger.error("Cannot move data to " + node + " " + e);
+            }
+        }
+
+        kvServer.replicas = list;
+
+        signalECS();
     }
 
     void removeServer(MetaData meta) {
         if (meta.getNode(KVname) == null) {
             kvServer.close();
-            signalECS();
         }
     }
 
@@ -452,9 +464,7 @@ public class KVServerWatcher {
         while (it.hasNext()) {
             Map.Entry<String, String> kv = (Map.Entry<String, String>) it.next();
 
-
             logger.info("Sending key => " + kv.getKey() + " to " + targetName);
-
 
             dataSemaphore = new CountDownLatch(1);
 
@@ -467,6 +477,8 @@ public class KVServerWatcher {
                 logger.error("Cannot send data ");
             }
         }
+
+        logger.info("Done!");
 
         deleteNode(dest);
     }
