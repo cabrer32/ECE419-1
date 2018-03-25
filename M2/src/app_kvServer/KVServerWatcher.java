@@ -344,6 +344,7 @@ public class KVServerWatcher {
             case "A":
                 logger.info("--- Start Server ---");
                 kvServer.start();
+                signalECS();
                 break;
             case "B":
                 logger.info("--- Stop Server ---");

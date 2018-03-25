@@ -86,6 +86,8 @@ public class ECSClient implements IECSClient {
                 logger.error(e.getMessage());
             }
 
+            ecs.addDetectors(serversTaken);
+
             if(!newService){
                 ecs.updateServerData();
                 ecs.updateServerReplica();
@@ -93,9 +95,9 @@ public class ECSClient implements IECSClient {
 
             ecs.updateServerMeta();
 
-            if(running) {
+            if(running)
                 start();
-            }
+
 
         } else {
             logger.warn("Not enough servers available for allocation!");
@@ -117,6 +119,9 @@ public class ECSClient implements IECSClient {
 
     @Override
     public boolean removeNodes(Collection<String> nodeNames) {
+
+        ecs.removeDetectors(nodeNames);
+
         return ecs.removeServers(nodeNames, true);
     }
 
