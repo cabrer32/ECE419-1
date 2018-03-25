@@ -17,6 +17,7 @@ import java.util.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 
@@ -107,7 +108,7 @@ public class KVServerWatcher {
         this.KVname = name;
         this.nodePath = ROOT_PATH + "/" + name;
 
-        Logger.getLogger("org.apache.zookeeper").setLevel(Level.ERROR);
+        Logger.getLogger("org.apache.zookeeper").setLevel(Level.INFO);
 
         gson = new Gson();
     }
@@ -184,8 +185,8 @@ public class KVServerWatcher {
             logger.error(e);
             return false;
         }
-
     }
+
 
     public void releaseConnection() {
         logger.info("Start releasing connections");
@@ -225,7 +226,10 @@ public class KVServerWatcher {
                             break;
                         case NodeDataChanged:
                             String data = readData(ROOT_PATH, this);
-                            executeAction(data.substring(0, 1), MetaData.JsonToMeta(data));
+
+                            ECSCommandExcutor ex = new ECSCommandExcutor(kvServer, logger, MetaData.JsonToMeta(data),data.substring(0, 1) );
+
+                            new Thread(ex).start();
                             break;
                         case NodeDeleted:
                             logger.info("Node Deleted");
@@ -288,33 +292,17 @@ public class KVServerWatcher {
 
                 if (keeperState == KeeperState.SyncConnected) {
                     switch (eventType) {
-                        case NodeDataChanged:
-                            // get new KV pair
+                        case NodeCreated:
                             String data = readData(path, this);
-
-                            if(data.equals("")){
-                                logger.debug("Irrelevant change.");
-                                return;
-                            }
-
                             String[] pair = JsonToPair(data);
 
                             kvServer.DBput(pair[0], pair[1]);
                             logger.info("Get new KV key => " + pair[0]);
 
-                            writeData(path, "");
-                            return;
-
-                        case NodeCreated:
-                            logger.info("Expecting new KVs coming.");
-                            exists(path, this);
-                            break;
-
-                        case NodeDeleted:
-                            logger.info("Finish receiving KVs.");
-                            exists(path, this);
+                            deleteNode(path);
                             break;
                         default:
+                            exists(path, this);
                             logger.debug("Irrelevant change.");
                     }
 
@@ -325,11 +313,10 @@ public class KVServerWatcher {
         };
 
 
-
-
         transferWatcher = new Watcher() {
             @Override
             public void process(WatchedEvent event) {
+
                 if (event == null) return;
 
 
@@ -343,15 +330,7 @@ public class KVServerWatcher {
 
                 if (keeperState == KeeperState.SyncConnected) {
                     switch (eventType) {
-                        case NodeDataChanged:
-
-                            String data = readData(path, this);
-
-                            if (!data.equals("")) {
-                                logger.debug("Irrelevant change.");
-                                return;
-                            }
-
+                        case NodeDeleted:
                             logger.info("Finish transfer one KV pair.");
                             dataSemaphore.countDown();
                             break;
@@ -393,51 +372,7 @@ public class KVServerWatcher {
     }
 
 
-    void executeAction(String action, MetaData meta) {
 
-        logger.info("#################### New command from ECS ####################");
-
-
-        switch (action) {
-            case "A":
-                logger.info("--- Start Server ---");
-                kvServer.start();
-                signalECS();
-                break;
-            case "B":
-                logger.info("--- Stop Server ---");
-                kvServer.stop();
-                break;
-            case "C":
-                logger.info("--- Transfer data to new servers ---");
-                reRangeNewServers(meta);
-                break;
-            case "D":
-                logger.info("--- Transfer data to new replica ---");
-                reRangeNewReplicas(meta);
-                break;
-            case "E":
-                logger.info("--- Remove Server ---");
-                removeServer(meta);
-                break;
-            case "F":
-                logger.info("--- Update to new meta data ---");
-                kvServer.setMetaData(meta);
-                kvServer.replicas = meta.getReplica(KVname);
-                kvServer.predecessor = meta.getPredecessor(KVname);
-                signalECS();
-                break;
-            case "G":
-                logger.info("--- Kill Server ---");
-                kvServer.kill();
-                break;
-            default:
-                logger.error("Cannot recognize the meta " + action);
-        }
-
-        logger.info("--- Done! ---");
-
-    }
 
 
     void reRangeNewServers(MetaData meta) {
@@ -512,15 +447,6 @@ public class KVServerWatcher {
     void moveData(Map<String, String> map, String targetName) {
         String dest = ROOT_PATH + "/" + targetName + "/" + kvServer.getName();
 
-        createPath(dest, "");
-
-        try {
-            CountDownLatch cl = new CountDownLatch(1);
-            cl.await(300, TimeUnit.MILLISECONDS);
-        } catch (Exception e) {
-            logger.error("Cannot send data ");
-        }
-
         Iterator it = map.entrySet().iterator();
 
         logger.info("Start transfering data to " + targetName + " with size " + map.size());
@@ -532,33 +458,22 @@ public class KVServerWatcher {
 
             dataSemaphore = new CountDownLatch(1);
 
-            writeData(dest, pairToJson(new String[]{kv.getKey(), kv.getValue()}));
-
+            createPath(dest, pairToJson(new String[]{kv.getKey(), kv.getValue()}));
             exists(dest, transferWatcher);
 
-            try {
-                logger.info("waiting for response.");
-                if(! dataSemaphore.await(3000, TimeUnit.MILLISECONDS))
-                    logger.error("timeout");
-
-            } catch (Exception e) {
-                logger.error("Cannot send data ");
+            try{
+                if(dataSemaphore.await(2000, TimeUnit.MILLISECONDS))
+                    logger.error("Transfer time out! ");
+            }catch(Exception e){
+                logger.error("Cannot watch new data sema");
             }
+
         }
 
         logger.info("Done!");
-
-        try {
-            CountDownLatch cl = new CountDownLatch(1);
-            cl.await(300, TimeUnit.MILLISECONDS);
-        } catch (Exception e) {
-            logger.error("Cannot send data ");
-        }
-
-        exists(dest, null);
-
-        deleteNode(dest);
     }
+
+
 
 
     String[] JsonToPair(String data) {

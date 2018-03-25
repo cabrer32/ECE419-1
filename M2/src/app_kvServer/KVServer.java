@@ -392,6 +392,8 @@ public class KVServer implements IKVServer {
         return state;
     }
 
+    public KVServerWatcher getZkWatch(){return zkWatch;}
+
     @Override
     public boolean moveData(String[] hashRange, String targetName) throws Exception {
         try {
