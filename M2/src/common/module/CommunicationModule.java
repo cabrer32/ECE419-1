@@ -137,7 +137,7 @@ public class CommunicationModule implements ICommunicationModule {
             output.close();
             socket.close();
             socket = null;
-            logger.debug("connection closed!");
+            logger.info("connection closed!");
         }
     }
 
