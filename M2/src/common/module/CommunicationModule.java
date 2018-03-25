@@ -41,7 +41,7 @@ public class CommunicationModule implements ICommunicationModule {
         System.arraycopy(ctrBytes, 0, msgBytes, jsonBytes.length, ctrBytes.length);
         output.write(msgBytes, 0, msgBytes.length);
         output.flush();
-        logger.info("Send message:\t '" + jsonBody + "'");
+        logger.debug("Send message:\t '" + jsonBody + "'");
     }
 
     @Override
@@ -108,7 +108,7 @@ public class CommunicationModule implements ICommunicationModule {
         String msg = new String(msgBytes);
 
         /* build final String */
-        logger.info("Receive message:\t '" + msg + "'");
+        logger.debug("Receive message:\t '" + msg + "'");
         return msg;
     }
 

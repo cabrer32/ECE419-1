@@ -58,7 +58,7 @@ public class ClientConnection implements Runnable {
             communicationModule.setStream();
 
             communicationModule.sendMessage(
-                    "Connection to KVServer B9 established: "
+                    "Connection to KVServer " + server.getName() + " established: "
                             + server.getHostname() + "/"
                             + server.getPort());
 
@@ -121,7 +121,7 @@ public class ClientConnection implements Runnable {
             logger.error("Error! Connection could not be established!", ioe);
         } finally {
             try {
-                logger.error("Disconnecting ClientConnection !");
+                logger.info("Disconnecting ClientConnection !");
                 if (communicationModule.getSocket() != null)
                     communicationModule.disconnect();
             } catch (IOException e) {
