@@ -46,8 +46,6 @@ public class KVClient implements IKVClient, ClientSocketListener {
                     serverAddress = tokens[1];
                     serverPort = Integer.parseInt(tokens[2]);
                     newConnection(serverAddress, serverPort);
-//                    kvStore.addListener(this);
-//                    kvStore.connect();
                 } catch(NumberFormatException nfe) {
                     printError("No valid address. Port must be a number!");
                     logger.info("Unable to parse argument <port>", nfe);
@@ -124,8 +122,7 @@ public class KVClient implements IKVClient, ClientSocketListener {
 
     private void put(String key, String value){
         try {
-            KVMessage res = kvStore.put(key, value);
-            printResponse(res);
+            kvStore.put(key, value);
         } catch (IOException e) {
             printError("Unable to put <key> <value>!");
             disconnect();
@@ -134,8 +131,7 @@ public class KVClient implements IKVClient, ClientSocketListener {
 
     private void get(String msg){
         try {
-            KVMessage res =  kvStore.get(msg);
-            printResponse(res);
+            kvStore.get(msg);
         } catch (IOException e) {
             printError("Unable to get <key>!");
             disconnect();
@@ -272,7 +268,7 @@ public class KVClient implements IKVClient, ClientSocketListener {
      */
     public static void main(String[] args) {
         try {
-            new LogSetup("logs/client.log", Level.ALL);
+            new LogSetup("logs/client.log", Level.INFO);
             KVClient app = new KVClient();
             app.run();
         } catch (IOException e) {
