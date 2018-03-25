@@ -32,8 +32,6 @@ public class ECSClientInteractionTest extends TestCase {
     public void tearDown() {
         ecsClient.shutdown();
         kvClient.disconnect();
-        ecsClient = null;
-        kvClient = null;
     }
 
     @Test
