@@ -175,17 +175,28 @@ public class KVServerWatcher {
     /**
      * delete node
      */
-    public void deleteNode(String path) {
+    public boolean deleteNode(String path) {
         try {
             this.zk.delete(path, -1);
             logger.debug("Successfully delete Node at " + path);
+            return true;
         } catch (Exception e) {
             logger.error("Failed to delete Node at " + path);
             logger.error(e);
+            return false;
         }
+
     }
 
     public void releaseConnection() {
+        logger.info("Start releasing connections");
+
+        int i = 0;
+        while(!deleteNode(nodePath)) {
+            deleteNode(nodePath + "/data" + i);
+            i++;
+        }
+
         if (this.zk != null) {
             try {
                 this.zk.close();
@@ -459,6 +470,10 @@ public class KVServerWatcher {
                 kvServer.setMetaData(meta);
                 kvServer.replicas = meta.getReplica(KVname);
                 kvServer.predecessor = meta.getPredecessor(KVname);
+                break;
+            case "G":
+                logger.info("--- Kill Server ---");
+                kvServer.kill();
                 break;
             default:
                 logger.error("Cannot recognize the meta " + action);

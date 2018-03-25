@@ -110,6 +110,10 @@ public class ECSWatcher {
                             awaitSemaphore.countDown();
                             exists(path,this);
                             break;
+                        case NodeDeleted:
+                            logger.info("Children Node Deleted at " + path);
+                            awaitSemaphore.countDown();
+                            break;
 
                         default:
                             break;
@@ -246,7 +250,8 @@ public class ECSWatcher {
             for (IECSNode node : serverRepoTaken) {
                 int i = 0;
 
-                while(!deleteNode(CHILDREN_PATH + node.getNodeName())) {
+                while(exists(CHILDREN_PATH + node.getNodeName(),null) != null &&
+                        !deleteNode(CHILDREN_PATH + node.getNodeName())) {
                     deleteNode(CHILDREN_PATH + node.getNodeName() + "/data" + i);
                     i++;
                 }
