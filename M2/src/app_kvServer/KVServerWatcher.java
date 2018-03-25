@@ -140,6 +140,7 @@ public class KVServerWatcher {
         try {
             this.zk.setData(path, data.getBytes(), -1);
             logger.debug("Successfully update Node at " + path);
+            return true;
         } catch (Exception e) {
             logger.error("Failed to update Node at " + path);
             logger.error(e);
@@ -152,13 +153,15 @@ public class KVServerWatcher {
      * Create node with path
      */
 
-    public void createPath(String path, String data) {
+    public boolean createPath(String path, String data) {
         try {
             logger.debug("Creating node at " + path);
             this.zk.create(path, data.getBytes(), Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+            return true;
         } catch (Exception e) {
             logger.error("Failed to create new node " + path);
             logger.error(e);
+            return false;
         }
     }
 
@@ -320,7 +323,9 @@ public class KVServerWatcher {
 
             connectedSemaphore.await();
 
-            createPath(nodePath, "");
+            if(!createPath(nodePath, ""))
+                signalECS();
+
 
             exists(nodePath, childrenWatcher);
 
