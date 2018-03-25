@@ -45,6 +45,26 @@ public class MetaData implements IMetaData {
         return serverRepo;
     }
 
+    @Override
+    public IECSNode getServerByKey(String key) {
+        MessageDigest md;
+        try {
+            md = MessageDigest.getInstance("MD5");
+            md.update(key.getBytes());
+            byte[] digest = md.digest();
+            String keyHashValue = DatatypeConverter.printHexBinary(digest).toUpperCase();
+
+            for (IECSNode node : serverRepo) {
+                if (((ECSNode) node).contains(keyHashValue)) {
+                    return node;
+                }
+            }
+
+        } catch (NoSuchAlgorithmException e) {
+            System.out.println(e.getMessage());
+        }
+        return null;
+    }
 
     @Override
     public String getPredecessor(String name) {

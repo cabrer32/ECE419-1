@@ -255,7 +255,5 @@ public class ECSWatcher {
             logger.error("Cannot Do ZK operation");
             return false;
         }
-
-
     }
 }

@@ -73,9 +73,11 @@ public class ClientConnection implements Runnable {
 
 
                     if (serverState == KVServer.KVServerState.STOPPED)
+
                         response = new Message(KVMessage.StatusType.SERVER_STOPPED, "", "");
 
                     else if (serverState == KVServer.KVServerState.LOCKED)
+
                         response = new Message(KVMessage.StatusType.SERVER_WRITE_LOCK, "", "");
 
                     else {
@@ -141,15 +143,9 @@ public class ClientConnection implements Runnable {
     private boolean compare(String key){
 
         try {
-            MessageDigest md = MessageDigest.getInstance("MD5");
-            md.update(key.getBytes());
-            byte[] digest = md.digest();
-            key = DatatypeConverter.printHexBinary(digest).toUpperCase();
 
-            String[] range = server.getMetaData().getHashRange(server.getName());
-
-            if (key.compareTo(range[0]) > 0 && key.compareTo(range[1]) < 0)
-                return true;
+            ECSNode node = (ECSNode) server.meta.getServerByKey(key);
+            return node.getNodeName().equals(server.getName());
 
         }catch(Exception e){
 
