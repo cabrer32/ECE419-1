@@ -23,10 +23,10 @@ public class AllTests {
 //        Suite.addTestSuite(InteractionTest.class);
 
         // additional test case after M1
-        Suite.addTestSuite(ECSClientTest.class);
+//        Suite.addTestSuite(ECSClientTest.class);
         Suite.addTestSuite(ECSClientInteractionTest.class);
-        Suite.addTestSuite(KVCacheTest.class);
-        Suite.addTestSuite(KVServerTest.class);
+//        Suite.addTestSuite(KVCacheTest.class);
+//        Suite.addTestSuite(KVServerTest.class);
         //may need to be removed
 //        Suite.addTestSuite(MetaDataTest.class);
 //        Suite.addTestSuite(ECSNodeTest.class);
