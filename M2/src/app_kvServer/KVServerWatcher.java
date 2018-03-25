@@ -584,7 +584,7 @@ public class KVServerWatcher {
 
             try {
                 logger.info("waiting for response.");
-                dataSemaphore.await();
+                dataSemaphore.await(3000, TimeUnit.MILLISECONDS);
 
             } catch (Exception e) {
                 logger.error("Cannot send data ");

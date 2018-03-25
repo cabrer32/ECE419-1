@@ -9,7 +9,7 @@ public class AllTests {
 
     static {
         try {
-            new LogSetup("logs/testing/test.log", Level.INFO);
+            new LogSetup("logs/testing/test.log", Level.ALL);
         } catch (Exception e) {
             e.printStackTrace();
         }
