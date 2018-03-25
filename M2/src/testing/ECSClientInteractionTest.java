@@ -17,7 +17,7 @@ import java.util.Map;
 public class ECSClientInteractionTest extends TestCase {
 
     private ECSClient ecsClient = null;
-    private KVStore kvClient;
+    private KVStore kvClient = null;
 
     @Before
     public void setUp() throws  Exception{
@@ -55,7 +55,7 @@ public class ECSClientInteractionTest extends TestCase {
 
         try {
             for (int i = 1; i <= 1000; i++) {
-                kvMessage  = kvClient.get("Replication-" + Integer.toString(i));
+                kvMessage  = kvClient.get("DataTransfer-" + Integer.toString(i));
                 assertTrue(kvMessage.getStatus() == StatusType.GET_SUCCESS);
             }
         } catch (Exception e) {

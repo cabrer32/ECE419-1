@@ -10,6 +10,7 @@ import org.junit.*;
 public class KVServerTest extends TestCase {
 
     private KVServer kvServer = null;
+    ServerThread thread =  null;
 
     private static final String KVSERVER_NAME = "testserver1";
     private static final int KVSERVER_PORT = 40000;
@@ -19,7 +20,7 @@ public class KVServerTest extends TestCase {
 
     @BeforeClass
     public void setUp() {
-        kvServer = new KVServer(KVSERVER_NAME, "", 2181);
+        kvServer = new KVServer(KVSERVER_NAME, "", 0);
         kvServer.initKVServer(KVSERVER_PORT, CACHE_SIZE, CACHE_STRATEGY);
         ServerThread thread = new ServerThread(kvServer);
         thread.start();
@@ -27,6 +28,7 @@ public class KVServerTest extends TestCase {
 
     @AfterClass
     public void tearDown() {
+        thread.interrupt();
         kvServer.close();
     }
 
@@ -91,7 +93,6 @@ public class KVServerTest extends TestCase {
 
     @Test
     public void testRun() {
-
     }
 
     @Test

@@ -44,15 +44,13 @@ public class AllTests {
         Suite.addTestSuite(ConnectionTest.class);
         Suite.addTestSuite(InteractionTest.class);
 
-//         additional test case after M1
-//        Suite.addTestSuite(KVClientTest.class);
-        Suite.addTestSuite(ECSClientTest.class);
+        // additional test case after M1
+//        Suite.addTestSuite(ECSClientTest.class);
+//        Suite.addTestSuite(ECSClientInteractionTest.class);
 //        Suite.addTestSuite(KVCacheTest.class);
 //        Suite.addTestSuite(KVServerTest.class);
 //        Suite.addTestSuite(KVStoreTest.class);
 //        Suite.addTestSuite(MetaDataTest.class);
-//        Suite.addTestSuite(KVMessageTest.class);
-//        Suite.addTestSuite(CommunicationModuleTest.class);
 //        Suite.addTestSuite(ECSNodeTest.class);
 //        Suite.addTestSuite(PerformanceTest.class);
 

@@ -2,6 +2,7 @@ package testing;
 
 import client.KVStore;
 import junit.framework.TestCase;
+import org.junit.Test;
 
 import java.util.ArrayList;
 
@@ -10,6 +11,7 @@ import java.util.ArrayList;
 public class KVStoreTest extends TestCase {
 
     //TO test multiple clients
+    @Test
     public void testMultiClients() {
         Exception ex = null;
 
@@ -41,6 +43,6 @@ public class KVStoreTest extends TestCase {
         } catch (Exception e) {
             ex = e;
         }
-
+        assertNotNull(ex);
     }
 }

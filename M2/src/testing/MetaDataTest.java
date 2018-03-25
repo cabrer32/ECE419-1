@@ -17,13 +17,13 @@ public class MetaDataTest extends TestCase {
     public IMetaData metaData = null;
     public String[] serverList = {"server8", "server6", "server1", "server7", "server4", "server3", "server5", "server2"};
 
-    @Before
+    @BeforeClass
     public void setUp() {
         ECS ecs =  new ECS("",0, "ecs.config");
         metaData = new MetaData(ecs.setupNewServers(8,"None", 100));
     }
 
-    @After
+    @AfterClass
     public void tearDown() {
         metaData = null;
     }
@@ -68,9 +68,9 @@ public class MetaDataTest extends TestCase {
 
     @Test
     public void testGetReplica() {
-        getReplicaWrapper("server8", new String[]{"server6", "server1"});
-        metaData.removeNode("server1");
         getReplicaWrapper("server8", new String[]{"server6", "server7"});
+        metaData.removeNode("server7");
+        getReplicaWrapper("server8", new String[]{"server6", "server4"});
         getReplicaWrapper("server2", new String[]{"server8", "server2"});
     }
 
@@ -92,8 +92,8 @@ public class MetaDataTest extends TestCase {
 
     @Test
     public void testRemoveNode() {
-        metaData.removeNode("server1");
-        IECSNode result = metaData.getNode("server1");
+        metaData.removeNode("server8");
+        IECSNode result = metaData.getNode("server8");
         assertNull("removeNode() failed!", result);
     }
 }
