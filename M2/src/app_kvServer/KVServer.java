@@ -270,11 +270,15 @@ public class KVServer implements IKVServer {
         db.putKV(key, value);
         logger.info("KV Operation (PUT) in STORAGE: KEY => " + key + ", VALUE => " + value);
 
-        HashMap<String, String> map = new HashMap<>();
-        map.put(key,value);
+        if(replicas != null && zkWatch != null) {
 
-        for(String name : replicas){
-            zkWatch.moveData(map, name);
+
+            HashMap<String, String> map = new HashMap<>();
+            map.put(key, value);
+
+            for (String name : replicas) {
+                zkWatch.moveData(map, name);
+            }
         }
     }
 
@@ -328,8 +332,6 @@ public class KVServer implements IKVServer {
                 }
             }
         }
-
-        logger.info("Server stopped.");
     }
 
     @Override
@@ -416,7 +418,7 @@ public class KVServer implements IKVServer {
             if (args.length != 6) {
                 System.out.println("Invalid argument! Usage: Server <name> <zkHostname> <zkPort>!");
             } else {
-                new logger.LogSetup("logs/server/" + args[0] + ".log", Level.INFO);
+                new logger.LogSetup("logs/server/" + args[0] + ".log", Level.ALL);
 
                 KVServer server = new KVServer(args[0], args[1], Integer.parseInt(args[2]));
 

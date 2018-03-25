@@ -223,6 +223,7 @@ public class KVServerWatcher {
                             kvServer.kill();
                             break;
                         default:
+                            exists(ROOT_PATH, this);
                             logger.info("Change is not related");
                             break;
                     }
@@ -268,8 +269,17 @@ public class KVServerWatcher {
 
                         case NodeChildrenChanged:
                             logger.info("Expecting new KV coming");
-                            exists(path, this);
+
+                            try{
+                                zk.getChildren(nodePath, childrenWatcher);
+                            }catch (Exception e){
+                                logger.error("Cannot watch children");
+                            }
+
+                            exists(path,this);
+                            break;
                         default:
+                            exists(path, this);
                             logger.debug("Irrelevant change.");
                     }
 
@@ -328,6 +338,8 @@ public class KVServerWatcher {
 
 
             exists(nodePath, childrenWatcher);
+
+            zk.getChildren(nodePath,childrenWatcher);
 
         } catch (Exception e) {
             logger.error("Failed to process KVServer Watcher " + e);
@@ -474,8 +486,9 @@ public class KVServerWatcher {
 
             dataSemaphore = new CountDownLatch(1);
 
-            exists(dest, transferWatcher);
             writeData(dest, entryToJson(kv));
+
+            exists(dest, transferWatcher);
 
             try {
                 dataSemaphore.await();

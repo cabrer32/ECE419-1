@@ -244,7 +244,12 @@ public class ECSWatcher {
                 return true;
 
             for (IECSNode node : serverRepoTaken) {
-                deleteNode(CHILDREN_PATH + node.getNodeName());
+                int i = 0;
+
+                while(!deleteNode(CHILDREN_PATH + node.getNodeName())) {
+                    deleteNode(CHILDREN_PATH + node.getNodeName() + "/data" + i);
+                    i++;
+                }
             }
 
             deleteNode(ROOT_PATH);
