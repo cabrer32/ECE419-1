@@ -1,27 +1,21 @@
 package testing;
 
-import app_kvServer.KVServer;
-import client.KVStore;
-import common.module.ServerThread;
 import ecs.ECSNode;
 import junit.framework.TestCase;
-import org.apache.log4j.Level;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.*;
 
 public class ECSNodeTest extends TestCase {
 
 
     private ECSNode node = null;
 
-    @BeforeClass
+    @Before
     public void setUp() {
         node = new ECSNode("server-test", "127.0.0.1", 50000, "a");
         node.setEndingHashValue("z");
     }
 
-    @AfterClass
+    @After
     public void tearDown() {
         node = null;
     }

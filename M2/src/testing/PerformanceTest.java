@@ -1,38 +1,94 @@
 package testing;
 
 import app_kvECS.ECSClient;
-import app_kvServer.KVServer;
 import client.KVStore;
-import common.module.ServerThread;
-import ecs.ECSNode;
+import common.messages.KVMessage;
 import junit.framework.TestCase;
-import org.apache.log4j.Level;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
-
-import java.lang.reflect.Array;
 import java.util.ArrayList;
-import java.util.Queue;
+import java.util.Random;
 
 public class PerformanceTest extends TestCase {
 
-    private ECSClient ecsClient = null;
-    private ArrayList<KVStore> kvClient = null;
+    private final int STORAGE_SERVER_MAX = 100;
+    private final int CACHE_SIZE_MAX = 500;
+    private final int KVCLIENT_MAX = 100;
+    private final int WARM_UP_TIMES = 30;
+    // PUT should be greater or equal to GET
+    private final int PUT_TIMES = 1000;
+    private final int GET_TIMES = 1000;
 
-    @BeforeClass
-    public void setUp() throws  Exception{
+    private ECSClient ecsClient;
+    private ArrayList<KVStore> KVClients = new ArrayList<>();
+
+    public void setUp() {
         ecsClient = new ECSClient("127.0.0.1",2181,"ecs.config");
-        ecsClient.addNodes(3, "FIFO", 100);
+        ecsClient.addNodes(3, "None", 100);
         ecsClient.start();
     }
 
-    @AfterClass
     public void tearDown() {
         ecsClient.shutdown();
     }
 
-    public void testMulticlients() {
+    public void testCacheNone() {
+        Random rand = new Random();
+        KVStore kvClient;
+        KVMessage kvMessage;
+        try {
+            System.out.println("================= NONE CACHE =================");
+            System.out.println("With Total (put, get) operations of (" + PUT_TIMES + ", " + GET_TIMES + "):");
+
+            for (int serverAdded = 0; serverAdded < STORAGE_SERVER_MAX - 3; serverAdded++) {
+                for (int cacheSize = 50; cacheSize <= CACHE_SIZE_MAX; cacheSize += 50) {
+                    for (int kvClientNum = 5, step = 5; kvClientNum <= KVCLIENT_MAX; kvClientNum += step) {
+
+                        System.out.println("Server Number: " + (3 + serverAdded) + "|" +
+                                "Cache Size: " + cacheSize + "|" +
+                                "Client Number: " + kvClientNum);
+                        for (int i = 0; i < step; i++) {
+                            kvClient = new KVStore("localhost", 50000);
+                            kvClient.connect();
+                            // warm up the storage service, try to hit all servers.
+                            for (int j = 0; j <= WARM_UP_TIMES; j++) {
+                                int ran = rand.nextInt();
+                                kvClient.put("WARM-UP-" + Integer.toString(ran), Integer.toString(ran));
+                                kvClient.put("WARM-UP-" + Integer.toString(ran), "");
+                            }
+                            KVClients.add(kvClient);
+                        }
+
+                        long start = System.currentTimeMillis();
+
+                        // test put and get request
+                        for (KVStore client : KVClients) {
+                            int[] records = new int[PUT_TIMES];
+                            for (int i = 0; i < PUT_TIMES; i++) {
+                                int ran = rand.nextInt();
+                                records[i] = ran;
+                                client.put("P-" + Integer.toString(ran), Integer.toString(ran));
+                            }
+
+                            for (int i = 0; i < GET_TIMES; i++) {
+                                kvMessage = client.get("P-" + Integer.toString(records[i]));
+                                assertTrue(kvMessage.getValue().equals(Integer.toString(records[i])));
+                            }
+                        }
+
+                        long end = System.currentTimeMillis();
+
+                        System.out.println("Processing time: " + (end - start) + "ms");
+                        System.out.println();
+                    }
+                }
+            }
+        } catch (Exception e) {
+            assertTrue(false);
+            System.out.println("None cache test failed " + e);
+        }
+    }
+
+
+        public void testMulticlients() {
         try {
 
 

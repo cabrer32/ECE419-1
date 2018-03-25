@@ -23,7 +23,6 @@ public class KVServerTest extends TestCase {
         kvServer = new KVServer(KVSERVER_NAME, "", 0);
         kvServer.initKVServer(KVSERVER_PORT, CACHE_SIZE, CACHE_STRATEGY);
         kvServer.clearStorage();
-        kvServer.run();
         thread = new ServerThread(kvServer);
         thread.start();
     }
@@ -36,19 +35,13 @@ public class KVServerTest extends TestCase {
 
     @Test
     public void testConstructor() {
-        assertNull("KVServer Constructor Failed!", kvServer);
+        assertNotNull("KVServer Constructor Failed!", kvServer);
     }
 
     @Test
     public void testGetPort() {
         int port = kvServer.getPort();
         assertEquals("getPort() failed.", KVSERVER_PORT, port);
-    }
-
-    @Test
-    public void testGetHostname() {
-        String hostName = kvServer.getHostname();
-        assertEquals("getHostName() failed.", KVSERVER_NAME, hostName);
     }
 
     @Test
