@@ -24,7 +24,7 @@ public class ECSClientInteractionTest extends TestCase {
         ecsClient = new ECSClient("127.0.0.1",2181,"ecs.config");
         ecsClient.addNodes(3, "None", 100);
         ecsClient.start();
-        kvClient = new KVStore("localhost", 50000);
+        kvClient = new KVStore("localhost", 50007);
         kvClient.connect();
     }
 
@@ -38,7 +38,7 @@ public class ECSClientInteractionTest extends TestCase {
     public void testDataTransfer() {
         Map<String, IECSNode> originalNodesMap = ecsClient.getNodes();
         try {
-            for (int i = 1; i <= 1000; i++) {
+            for (int i = 1; i <= 50; i++) {
                 kvClient.put("DataTransfer-" + Integer.toString(i), Integer.toString(i));
             }
         } catch (Exception e) {
