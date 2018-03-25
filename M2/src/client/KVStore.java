@@ -94,7 +94,8 @@ public class KVStore implements KVCommInterface {
             }
         } catch (IOException e) {
             communicationModules.remove(serverName);
-            meta.removeNode(serverName);
+            if (meta != null)
+                meta.removeNode(serverName);
             logger.info("Responsible server is down, trying other servers. ");
         }
 
