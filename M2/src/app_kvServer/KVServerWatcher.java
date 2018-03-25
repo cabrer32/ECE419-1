@@ -16,6 +16,7 @@ import org.apache.zookeeper.data.Stat;
 import java.lang.reflect.Type;
 import java.util.*;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
@@ -327,7 +328,7 @@ public class KVServerWatcher {
                                 return;
                             }
 
-                            Pair<String, String> pair = JsontoPair(data);
+                            Pair<String, String> pair = JsonToPair(data);
 
                             kvServer.DBput(pair.getKey(), pair.getValue());
                             logger.info("Get new KV key => " + pair.getKey());
@@ -336,8 +337,9 @@ public class KVServerWatcher {
                             return;
 
                         case NodeCreated:
-                            logger.info("Expecting new KV coming.");
+                            logger.info("Expecting new KVs coming.");
                             exists(path, this);
+                            writeData(path, "");
                             break;
 
                         case NodeDeleted:
@@ -381,10 +383,12 @@ public class KVServerWatcher {
                                 logger.debug("Irrelevant change.");
                                 return;
                             }
+
                             logger.info("Finish transfer one KV pair.");
                             dataSemaphore.countDown();
                             break;
                         default:
+                            exists(path, this);
                             logger.debug("Irrelevant change.");
                             break;
                     }
@@ -544,7 +548,15 @@ public class KVServerWatcher {
 
         dest = dest + i;
 
+        dataSemaphore = new CountDownLatch(1);
         createPath(dest, "");
+        exists(dest, transferWatcher);
+
+        try {
+            dataSemaphore.await(SESSION_TIMEOUT, TimeUnit.MILLISECONDS);
+        } catch (Exception e) {
+            logger.error("Cannot send data ");
+        }
 
         Iterator it = map.entrySet().iterator();
 
@@ -561,7 +573,7 @@ public class KVServerWatcher {
 
             exists(dest, transferWatcher);
             try {
-                dataSemaphore.await();
+                dataSemaphore.await(SESSION_TIMEOUT, TimeUnit.MILLISECONDS);
             } catch (Exception e) {
                 logger.error("Cannot send data ");
             }
@@ -573,7 +585,7 @@ public class KVServerWatcher {
     }
 
 
-    Pair<String, String> JsontoPair(String data) {
+    Pair<String, String> JsonToPair(String data) {
 
         Type Type = new TypeToken<Pair<String, String>>() {
         }.getType();
