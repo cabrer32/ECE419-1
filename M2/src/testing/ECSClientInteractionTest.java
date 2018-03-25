@@ -11,7 +11,9 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.Map;
 
 public class ECSClientInteractionTest extends TestCase {
@@ -66,8 +68,14 @@ public class ECSClientInteractionTest extends TestCase {
 
         Collection<IECSNode> addedNodes =  ecsClient.addNodes(3, "None", 100);
 
+        ArrayList<String> nodesRemoved = new ArrayList<>(originalNodesMap.keySet());
+        nodesRemoved.remove("server8");
+        Iterator itr = addedNodes.iterator();
+        if (itr.hasNext()) {
+            nodesRemoved.add(((IECSNode) itr.next()).getNodeName());
+        }
 
-        assertTrue("failed to remove nodes!", ecsClient.removeNodes(originalNodesMap.keySet()));
+        assertTrue("failed to remove nodes!", ecsClient.removeNodes(nodesRemoved));
 
         KVMessage kvMessage;
 
