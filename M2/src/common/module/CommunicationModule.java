@@ -131,13 +131,13 @@ public class CommunicationModule implements ICommunicationModule {
 
     @Override
     public synchronized void disconnect() throws IOException {
-        logger.info("tearing down the connection ...");
+
         if (socket != null) {
             input.close();
             output.close();
             socket.close();
             socket = null;
-            logger.info("connection closed!");
+            logger.debug("connection closed!");
         }
     }
 

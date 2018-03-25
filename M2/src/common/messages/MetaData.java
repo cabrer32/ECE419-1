@@ -178,10 +178,15 @@ public class MetaData implements IMetaData {
 
         list.add(getSuccessor(list.get(0)));
 
+        return list;
+    }
+
+    public ArrayList<String> getNameList(){
+        ArrayList<String> list = new ArrayList<>();
+        for(IECSNode node : serverRepo)
+            list.add(node.getNodeName());
 
         return list;
-
-
     }
 
 
