@@ -70,11 +70,11 @@ public class KVStore implements KVCommInterface {
                 IECSNode node = meta.getServerByKey(msg.getKey());
 
 
-                if(node == null){
+                if (node == null) {
                     node = meta.getServerRepo().first();
                 }
 
-                logger.debug("responsible server is "+ node.getNodeName());
+                logger.debug("responsible server is " + node.getNodeName());
 
                 serverName = node.getNodeName();
                 if (communicationModules.get(node.getNodeName()) == null) {
@@ -92,7 +92,7 @@ public class KVStore implements KVCommInterface {
                     meta = MetaData.JsonToMeta(response.getValue());
                     return handleServerLogic(msg);
             }
-        }catch (IOException e){
+        } catch (IOException e) {
             communicationModules.remove(serverName);
             meta.removeNode(serverName);
             logger.info("Responsible server is down, trying other servers. ");
@@ -102,7 +102,7 @@ public class KVStore implements KVCommInterface {
     }
 
 
-    private void connectTo(CommunicationModule ci) throws IOException{
+    private void connectTo(CommunicationModule ci) throws IOException {
         ci.connect();
         ci.setStream();
         String welcomeMsg = ci.receiveMessage();
@@ -110,10 +110,6 @@ public class KVStore implements KVCommInterface {
             listener.handleNewMessage(welcomeMsg);
         }
     }
-
-
-
-
 
 
     @Override
@@ -158,10 +154,9 @@ public class KVStore implements KVCommInterface {
         KVMessage msgReq = new Message(KVMessage.StatusType.PUT, key, value);
 
 
-
         KVMessage response = null;
 
-        while(response == null)
+        while (response == null)
             response = handleServerLogic(msgReq);
 
 
@@ -176,7 +171,11 @@ public class KVStore implements KVCommInterface {
     public KVMessage get(String key) throws IOException {
         KVMessage msgReq = new Message(KVMessage.StatusType.GET, key, "");
 
-        KVMessage response = handleServerLogic(msgReq);
+        KVMessage response = null;
+
+        while (response == null)
+            response = handleServerLogic(msgReq);
+
         if (listener != null) {
             listener.handleNewMessage(response.getStatus().toString());
         }
