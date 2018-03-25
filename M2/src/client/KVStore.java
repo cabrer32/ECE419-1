@@ -57,29 +57,45 @@ public class KVStore implements KVCommInterface {
         return msg;
     }
 
-    public KVMessage handleServerLogic(KVMessage msg) throws IOException {
+    public KVMessage handleServerLogic(KVMessage msg) {
 
-        KVMessage response;
+        KVMessage response = null;
+        String serverName = null;
+        try {
+            if (meta == null) {
+                serverName = firstServerName;
+                response = sendMessage(communicationModules.get(firstServerName), msg);
+            } else {
 
-        if(meta == null){
-            response = sendMessage(communicationModules.get(firstServerName), msg);
-        }else{
-            IECSNode node = meta.getServerByKey(msg.getKey());
+                IECSNode node = meta.getServerByKey(msg.getKey());
 
-            if(communicationModules.get(node.getNodeName()) == null){
-                CommunicationModule ci = new CommunicationModule(node.getNodeHost(), node.getNodePort());
-                connectTo(ci);
-                communicationModules.put(node.getNodeName(), ci);
+
+                if(node == null){
+                    node = meta.getServerRepo().first();
+                }
+
+                logger.debug("responsible server is "+ node.getNodeName());
+
+                serverName = node.getNodeName();
+                if (communicationModules.get(node.getNodeName()) == null) {
+                    CommunicationModule ci = new CommunicationModule(node.getNodeHost(), node.getNodePort());
+                    connectTo(ci);
+                    communicationModules.put(node.getNodeName(), ci);
+                }
+
+                response = sendMessage(communicationModules.get(node.getNodeName()), msg);
+
             }
 
-            response = sendMessage(communicationModules.get(node.getNodeName()), msg);
-
-        }
-
-        switch(response.getStatus()){
-            case SERVER_NOT_RESPONSIBLE:
-                meta = MetaData.JsonToMeta(response.getValue());
-                return handleServerLogic(msg);
+            switch (response.getStatus()) {
+                case SERVER_NOT_RESPONSIBLE:
+                    meta = MetaData.JsonToMeta(response.getValue());
+                    return handleServerLogic(msg);
+            }
+        }catch (IOException e){
+            communicationModules.remove(serverName);
+            meta.removeNode(serverName);
+            logger.info("Responsible server is down, trying other servers. ");
         }
 
         return response;
@@ -141,7 +157,14 @@ public class KVStore implements KVCommInterface {
 
         KVMessage msgReq = new Message(KVMessage.StatusType.PUT, key, value);
 
-        KVMessage response = handleServerLogic(msgReq);
+
+
+        KVMessage response = null;
+
+        while(response == null)
+            response = handleServerLogic(msgReq);
+
+
         if (listener != null) {
             listener.handleNewMessage(response.getStatus().toString());
         }

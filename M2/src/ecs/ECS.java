@@ -165,6 +165,8 @@ public class ECS {
 
         updateServerReplica();
 
+        updateServerMeta();
+
         return true;
     }
 

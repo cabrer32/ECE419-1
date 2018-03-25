@@ -569,7 +569,7 @@ public class KVServerWatcher {
 
         try {
             CountDownLatch cl = new CountDownLatch(1);
-            cl.await(500, TimeUnit.MILLISECONDS);
+            cl.await(300, TimeUnit.MILLISECONDS);
         } catch (Exception e) {
             logger.error("Cannot send data ");
         }
@@ -599,6 +599,13 @@ public class KVServerWatcher {
         }
 
         logger.info("Done!");
+
+        try {
+            CountDownLatch cl = new CountDownLatch(1);
+            cl.await(300, TimeUnit.MILLISECONDS);
+        } catch (Exception e) {
+            logger.error("Cannot send data ");
+        }
 
         deleteNode(dest);
     }
