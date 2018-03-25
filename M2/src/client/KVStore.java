@@ -1,22 +1,17 @@
 package client;
 
 import app_kvClient.ClientSocketListener;
-import app_kvServer.KVServer;
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
-import com.google.gson.reflect.TypeToken;
 import common.messages.KVMessage;
 import common.messages.Message;
 import common.messages.MetaData;
 import common.module.CommunicationModule;
-import ecs.ECSNode;
+
 import ecs.IECSNode;
 import org.apache.log4j.Logger;
 
-import javax.xml.bind.DatatypeConverter;
 import java.io.IOException;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.*;
 
 public class KVStore implements KVCommInterface {

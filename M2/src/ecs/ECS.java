@@ -28,6 +28,8 @@ public class ECS {
 
     private static final String ROOT_PATH = "/ecs";
 
+    private HashMap<String, ECSDetector> detectors;
+
     /**
      * Initialize
      **/
@@ -43,6 +45,7 @@ public class ECS {
         zkWatch.init(zkHostname, zkPort);
 
         meta = new MetaData(new TreeSet<IECSNode>());
+        detectors = new HashMap<>();
     }
 
     private void loadFile(String configFileName) {
@@ -75,12 +78,9 @@ public class ECS {
     }
 
 
-
     /**
-     *
      * Following function will take command from ecs client
-     *
-     * */
+     */
 
     public void initServers(TreeSet<IECSNode> list) {
 
@@ -102,7 +102,7 @@ public class ECS {
         }
     }
 
-    public void updateServerMeta(){
+    public void updateServerMeta() {
         logger.info("--- Updating server meta ---");
 
         broadcastMeta("F");
@@ -111,7 +111,7 @@ public class ECS {
     }
 
 
-    public void updateServerData(){
+    public void updateServerData() {
         logger.info("--- Updating server data ---");
 
         zkWatch.setSemaphore(meta.getServerRepo().size());
@@ -124,7 +124,7 @@ public class ECS {
     }
 
 
-    public void updateServerReplica(){
+    public void updateServerReplica() {
         logger.info("--- Updating server replica ---");
 
         zkWatch.setSemaphore(meta.getServerRepo().size());
@@ -135,7 +135,6 @@ public class ECS {
 
         logger.info("- Done! -");
     }
-
 
 
     public boolean removeServers(Collection<String> nodeNames, boolean reuse) {
@@ -171,7 +170,6 @@ public class ECS {
     }
 
 
-
     public TreeSet<IECSNode> setupNewServers(int count, String cacheStrategy, int cacheSize) {
 
         if (avaServer.size() < count) {
@@ -197,14 +195,9 @@ public class ECS {
     }
 
 
-
-
     /**
-     *
      * Following functions will interact with ECS watcher
-     *
      **/
-
 
 
     public void broadcastMeta(String type) {
@@ -230,5 +223,33 @@ public class ECS {
         boolean flag = zkWatch.deleteAllNodes(meta.getServerRepo());
         zkWatch.releaseConnection();
         return flag;
+    }
+
+    /**
+     * Following functions will interact with ECSDetector
+     */
+
+    public void addDetectors(Collection<IECSNode> list) {
+
+        for (IECSNode node : list) {
+            ECSDetector detector = new ECSDetector(logger, this, node);
+            detectors.put(node.getNodeName(), detector);
+            new Thread(detector).start();
+        }
+    }
+
+    public void removeDetectors(Collection<String> list) {
+        for (String node : list) {
+            ECSDetector detector = detectors.remove(node);
+            detector.stop();
+        }
+    }
+
+    public void handleFailure(IECSNode node) {
+        ArrayList<String> list = new ArrayList<>();
+        list.add(node.getNodeName());
+
+        removeServers(list, false);
+        detectors.remove(node.getNodeName());
     }
 }
