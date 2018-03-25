@@ -16,7 +16,6 @@ public class ECSClientTest extends TestCase {
 
     @BeforeClass
     public void setUp() {
-
         ecsClient = new ECSClient("127.0.0.1",2181,"ecs.config");
     }
 

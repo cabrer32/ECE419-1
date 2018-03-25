@@ -90,7 +90,9 @@ public class KVStore implements KVCommInterface {
         ci.connect();
         ci.setStream();
         String welcomeMsg = ci.receiveMessage();
-        listener.handleNewMessage(welcomeMsg);
+        if (listener != null) {
+            listener.handleNewMessage(welcomeMsg);
+        }
     }
 
 
@@ -139,7 +141,9 @@ public class KVStore implements KVCommInterface {
         KVMessage msgReq = new Message(KVMessage.StatusType.PUT, key, value);
 
         KVMessage response = handleServerLogic(msgReq);
-        listener.handleNewMessage(response.getStatus().toString());
+        if (listener != null) {
+            listener.handleNewMessage(response.getStatus().toString());
+        }
         return response;
 
     }
@@ -149,7 +153,9 @@ public class KVStore implements KVCommInterface {
         KVMessage msgReq = new Message(KVMessage.StatusType.GET, key, "");
 
         KVMessage response = handleServerLogic(msgReq);
-        listener.handleNewMessage(response.getStatus().toString());
+        if (listener != null) {
+            listener.handleNewMessage(response.getStatus().toString());
+        }
         return response;
     }
 

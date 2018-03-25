@@ -5,6 +5,7 @@ import client.KVStore;
 import common.module.ServerThread;
 import junit.framework.TestCase;
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -13,7 +14,7 @@ public class KVCacheTest extends TestCase {
     KVServer server = null;
     ServerThread serverThread = null;
 
-    @Override
+    @AfterClass
     protected void tearDown() {
         serverThread.interrupt();
         server.close();
@@ -22,9 +23,10 @@ public class KVCacheTest extends TestCase {
     }
 
 
-
     @Test
     public void testFIFO() {
+        Exception ex = null;
+
         try {
 
             server = new KVServer("test", "",0);
@@ -52,12 +54,17 @@ public class KVCacheTest extends TestCase {
 
             server.close();
         } catch (Exception e) {
+            ex = e;
             System.out.println("FIFO failed " + e);
         }
+
+        assertNull(ex);
     }
 
     @Test
     public void testLFU() {
+        Exception ex = null;
+
         try {
 
             server = new KVServer("test", "",0);
@@ -94,12 +101,17 @@ public class KVCacheTest extends TestCase {
             server.close();
 
         } catch (Exception e) {
+            ex = e;
             System.out.println("LFU test case " + e);
         }
+
+        assertNull(ex);
     }
 
     @Test
     public void testLRU() {
+        Exception ex = null;
+
         try {
 
             server = new KVServer("test", "",0);
@@ -132,9 +144,11 @@ public class KVCacheTest extends TestCase {
 
             server.close();
         } catch (Exception e) {
-
+            ex = e;
             System.out.println("LRU failed " + e);
         }
+
+        assertNull(ex);
     }
 
 

@@ -6,6 +6,8 @@ import common.module.ServerThread;
 import ecs.ECSNode;
 import junit.framework.TestCase;
 import org.apache.log4j.Level;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class ECSNodeTest extends TestCase {
@@ -13,17 +15,15 @@ public class ECSNodeTest extends TestCase {
 
     private ECSNode node = null;
 
-    @Override
+    @BeforeClass
     public void setUp() {
+        node = new ECSNode("server-test", "127.0.0.1", 50000, "a");
+        node.setEndingHashValue("z");
+    }
 
-        try {
-            node = new ECSNode("server-test", "127.0.0.1", 50000, "a");
-            node.setEndingHashValue("z");
-
-        } catch (Exception e) {
-            assertTrue(false);
-            System.out.println("Cannot create ECSNode");
-        }
+    @AfterClass
+    public void tearDown() {
+        node = null;
     }
 
 
@@ -50,7 +50,7 @@ public class ECSNodeTest extends TestCase {
     }
 
     @Test
-    public void testgetNodeRange() {
+    public void testGetHashRange() {
 
         String range[] = node.getNodeHashRange();
 

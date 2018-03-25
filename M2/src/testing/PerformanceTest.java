@@ -6,12 +6,13 @@ import common.module.ServerThread;
 import ecs.ECSNode;
 import junit.framework.TestCase;
 import org.apache.log4j.Level;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.util.ArrayList;
 
 public class PerformanceTest extends TestCase {
-
 
     public void testMulticlients() {
         try {
