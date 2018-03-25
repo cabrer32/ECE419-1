@@ -80,7 +80,7 @@ public class ECSClientInteractionTest extends TestCase {
         KVMessage kvMessage;
 
         try {
-            for (int i = 1; i <= 1000; i++) {
+            for (int i = 1; i <= 50; i++) {
                 kvMessage  = kvClient.get("DataTransfer-" + Integer.toString(i));
                 assertTrue(kvMessage.getStatus() == StatusType.GET_SUCCESS);
             }
