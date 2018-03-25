@@ -2,6 +2,7 @@ package app_kvServer;
 
 import common.messages.MetaData;
 import ecs.IECSNode;
+import javafx.util.Pair;
 import org.apache.log4j.Level;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.WatchedEvent;
@@ -46,7 +47,12 @@ public class KVServerWatcher {
     /**
      * Watcher to get server operations
      */
-    private Watcher childrenWatcher = null;
+//    private Watcher childrenWatcher = null;
+
+    /**
+     * Watcher to get transfer data
+     */
+    private Watcher dataWatcher = null;
 
     /**
      * Watcher to get transfer data
@@ -213,9 +219,7 @@ public class KVServerWatcher {
                             connectedSemaphore.countDown();
                             break;
                         case NodeDataChanged:
-
                             String data = readData(ROOT_PATH, this);
-
                             executeAction(data.substring(0, 1), MetaData.JsonToMeta(data));
                             break;
                         case NodeDeleted:
@@ -234,7 +238,71 @@ public class KVServerWatcher {
             }
         };
 
-        childrenWatcher = new Watcher() {
+//        childrenWatcher = new Watcher() {
+//            @Override
+//            public void process(WatchedEvent event) {
+//
+//                if (event == null) return;
+//
+//                KeeperState keeperState = event.getState();
+//
+//                EventType eventType = event.getType();
+//
+//                String path = event.getPath();
+//
+//                logger.debug("Children watcher triggered " + event.toString());
+//
+//                if (keeperState == KeeperState.SyncConnected) {
+//                    switch (eventType) {
+//                        case NodeDataChanged:
+//                            if (path.equals(nodePath)) {
+//                                exists(path, this);
+//                                logger.debug("Irrelevant change.");
+//                                return;
+//                            }
+//
+//                            // get new KV pair
+//                            String data = readData(path, this);
+//
+//                            Map.Entry<String, String> kv = parseJsonEntry(data);
+//                            kvServer.DBput(kv.getKey(), kv.getValue());
+//                            logger.info("Get new KV key => " + kv.getKey());
+//
+//                            writeData(path, "");
+//                            break;
+//                        case NodeCreated:
+//                            if (path.equals(nodePath)) {
+//                                exists(path, this);
+//                                logger.debug("Irrelevant change.");
+//                                return;
+//                            }
+//                            break;
+//
+//                        case NodeChildrenChanged:
+//                            logger.info("Expecting new KV coming");
+//
+//                            try{
+//                                zk.getChildren(nodePath, childrenWatcher);
+//                            }catch (Exception e){
+//                                logger.error("Cannot watch children");
+//                            }
+//                            exists(path,this);
+//
+//
+//                            writeData(path, "");
+//                            break;
+//                        default:
+//                            exists(path, this);
+//                            logger.debug("Irrelevant change.");
+//                    }
+//
+//                } else {
+//                    logger.warn("Failed to connect with zookeeper server -> children node");
+//                }
+//            }
+//        };
+
+        dataWatcher = new Watcher() {
             @Override
             public void process(WatchedEvent event) {
 
@@ -246,40 +314,37 @@ public class KVServerWatcher {
 
                 String path = event.getPath();
 
-                logger.debug("Children watcher triggered " + event.toString());
+                logger.debug("data watcher triggered " + event.toString());
 
                 if (keeperState == KeeperState.SyncConnected) {
                     switch (eventType) {
                         case NodeDataChanged:
-                            if (path.equals(nodePath)) {
-                                exists(path, this);
+                            // get new KV pair
+                            String data = readData(path, this);
+
+                            if(data.equals("")){
                                 logger.debug("Irrelevant change.");
                                 return;
                             }
 
-                            // get new KV pair
-                            String data = readData(path, this);
+                            Pair<String, String> pair = JsontoPair(data);
 
-                            Map.Entry<String, String> kv = parseJsonEntry(data);
-                            kvServer.DBput(kv.getKey(), kv.getValue());
-                            logger.info("Get new KV key => " + kv.getKey());
+                            kvServer.DBput(pair.getKey(), pair.getValue());
+                            logger.info("Get new KV key => " + pair.getKey());
 
                             writeData(path, "");
+                            return;
+
+                        case NodeCreated:
+                            logger.info("Expecting new KV coming.");
+                            exists(path, this);
                             break;
 
-                        case NodeChildrenChanged:
-                            logger.info("Expecting new KV coming");
-
-                            try{
-                                zk.getChildren(nodePath, childrenWatcher);
-                            }catch (Exception e){
-                                logger.error("Cannot watch children");
-                            }
-
-                            exists(path,this);
+                        case NodeDeleted:
+                            logger.info("Finish receiving KVs.");
+                            exists(path, this);
                             break;
                         default:
-                            exists(path, this);
                             logger.debug("Irrelevant change.");
                     }
 
@@ -288,6 +353,9 @@ public class KVServerWatcher {
                 }
             }
         };
+
+
+
 
         transferWatcher = new Watcher() {
             @Override
@@ -337,9 +405,12 @@ public class KVServerWatcher {
                 signalECS();
 
 
-            exists(nodePath, childrenWatcher);
+//            exists(nodePath, childrenWatcher);
+//
+//            zk.getChildren(nodePath,childrenWatcher);
 
-            zk.getChildren(nodePath,childrenWatcher);
+            for(int i = 0; i< 6; i++)
+                exists(nodePath + "/data" + i, dataWatcher);
 
         } catch (Exception e) {
             logger.error("Failed to process KVServer Watcher " + e);
@@ -486,10 +557,9 @@ public class KVServerWatcher {
 
             dataSemaphore = new CountDownLatch(1);
 
-            writeData(dest, entryToJson(kv));
+            writeData(dest, pairToJson(new Pair<>(kv.getKey(), kv.getValue())));
 
             exists(dest, transferWatcher);
-
             try {
                 dataSemaphore.await();
             } catch (Exception e) {
@@ -502,15 +572,17 @@ public class KVServerWatcher {
         deleteNode(dest);
     }
 
-    Map.Entry<String, String> parseJsonEntry(String data) {
-        Type Type = new TypeToken<Map.Entry<String, String>>() {
+
+    Pair<String, String> JsontoPair(String data) {
+
+        Type Type = new TypeToken<Pair<String, String>>() {
         }.getType();
 
         return gson.fromJson(data, Type);
     }
 
-    String entryToJson(Map.Entry<String, String> kv) {
-        Type Type = new TypeToken<Map.Entry<String, String>>() {
+    String pairToJson(Pair<String, String> kv) {
+        Type Type = new TypeToken<Pair<String, String>>() {
         }.getType();
 
         return gson.toJson(kv, Type);
