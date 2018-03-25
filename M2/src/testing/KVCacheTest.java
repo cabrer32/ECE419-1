@@ -22,9 +22,10 @@ public class KVCacheTest extends TestCase {
     }
 
 
-
     @Test
     public void testFIFO() {
+        Exception ex = null;
+
         try {
 
             server = new KVServer("test", "",0);
@@ -52,12 +53,17 @@ public class KVCacheTest extends TestCase {
 
             server.close();
         } catch (Exception e) {
+            ex = e;
             System.out.println("FIFO failed " + e);
         }
+
+        assertNull(ex);
     }
 
     @Test
     public void testLFU() {
+        Exception ex = null;
+
         try {
 
             server = new KVServer("test", "",0);
@@ -94,12 +100,17 @@ public class KVCacheTest extends TestCase {
             server.close();
 
         } catch (Exception e) {
+            ex = e;
             System.out.println("LFU test case " + e);
         }
+
+        assertNull(ex);
     }
 
     @Test
     public void testLRU() {
+        Exception ex = null;
+
         try {
 
             server = new KVServer("test", "",0);
@@ -132,9 +143,11 @@ public class KVCacheTest extends TestCase {
 
             server.close();
         } catch (Exception e) {
-
+            ex = e;
             System.out.println("LRU failed " + e);
         }
+
+        assertNull(ex);
     }
 
 

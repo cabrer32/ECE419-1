@@ -21,6 +21,7 @@ public class KVStoreTest extends TestCase {
             for (int i = 0; i <= 5; i++) {
                 KVStore kvClient = new KVStore("localhost", 50007);
                 kvClient.connect();
+                assertTrue("KVClient is not connected!", kvClient.isConnected());
                 clients.add(kvClient);
             }
 
