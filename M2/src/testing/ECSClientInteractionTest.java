@@ -6,6 +6,8 @@ import common.messages.KVMessage;
 import common.messages.KVMessage.*;
 import ecs.IECSNode;
 import junit.framework.TestCase;
+import logger.LogSetup;
+import org.apache.log4j.Level;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -23,6 +25,12 @@ public class ECSClientInteractionTest extends TestCase {
 
     @Before
     public void setUp() throws  Exception{
+        try {
+            new LogSetup("logs/testing/test.log", Level.ALL);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
         ecsClient = new ECSClient("127.0.0.1",2181,"ecs.config");
         ecsClient.addNodes(3, "None", 100);
         ecsClient.start();
