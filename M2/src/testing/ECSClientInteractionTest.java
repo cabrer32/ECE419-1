@@ -59,7 +59,7 @@ public class ECSClientInteractionTest extends TestCase {
     public void testDataTransfer() {
         Map<String, IECSNode> originalNodesMap = ecsClient.getNodes();
         try {
-            for (int i = 1; i <= 50; i++) {
+            for (int i = 1; i <= 10; i++) {
                 kvClient.put("DataTransfer-" + Integer.toString(i), Integer.toString(i));
             }
         } catch (Exception e) {
@@ -80,7 +80,7 @@ public class ECSClientInteractionTest extends TestCase {
         KVMessage kvMessage;
 
         try {
-            for (int i = 1; i <= 50; i++) {
+            for (int i = 1; i <= 10; i++) {
                 kvMessage  = kvClient.get("DataTransfer-" + Integer.toString(i));
                 assertTrue(kvMessage.getStatus() == StatusType.GET_SUCCESS);
             }
@@ -94,7 +94,7 @@ public class ECSClientInteractionTest extends TestCase {
     public void testKVServerCrashed() {
         Map<String, IECSNode> originalNodesMap = ecsClient.getNodes();
         try {
-            for (int i = 1; i <= 1000; i++) {
+            for (int i = 1; i <= 10; i++) {
                 kvClient.put("Replication-" + Integer.toString(i), Integer.toString(i));
             }
         } catch (Exception e) {
@@ -120,7 +120,7 @@ public class ECSClientInteractionTest extends TestCase {
         KVMessage kvMessage;
 
         try {
-            for (int i = 1; i <= 1000; i++) {
+            for (int i = 1; i <= 10; i++) {
                 kvMessage  = kvClient.get("Replication-" + Integer.toString(i));
                 assertTrue(kvMessage.getStatus() == StatusType.GET_SUCCESS);
             }
