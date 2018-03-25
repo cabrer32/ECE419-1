@@ -350,7 +350,6 @@ public class KVServerWatcher {
                         case NodeCreated:
                             logger.info("Expecting new KVs coming.");
                             exists(path, this);
-                            writeData(path, "");
                             break;
 
                         case NodeDeleted:
@@ -564,12 +563,13 @@ public class KVServerWatcher {
 
         dest = dest + i;
 
-        dataSemaphore = new CountDownLatch(1);
+
         createPath(dest, "");
-        exists(dest, transferWatcher);
+
 
         try {
-            dataSemaphore.await(SESSION_TIMEOUT, TimeUnit.MILLISECONDS);
+            CountDownLatch cl = new CountDownLatch(1);
+            cl.await(500, TimeUnit.MILLISECONDS);
         } catch (Exception e) {
             logger.error("Cannot send data ");
         }
@@ -588,8 +588,11 @@ public class KVServerWatcher {
             writeData(dest, pairToJson(new Pair<>(kv.getKey(), kv.getValue())));
 
             exists(dest, transferWatcher);
+
             try {
-                dataSemaphore.await(SESSION_TIMEOUT, TimeUnit.MILLISECONDS);
+                logger.info("waiting for response.");
+                dataSemaphore.await();
+
             } catch (Exception e) {
                 logger.error("Cannot send data ");
             }
