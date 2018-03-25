@@ -339,10 +339,10 @@ public class KVServerWatcher {
                                 return;
                             }
 
-                            Pair<String, String> pair = JsonToPair(data);
+                            String[] pair = JsonToPair(data);
 
-                            kvServer.DBput(pair.getKey(), pair.getValue());
-                            logger.info("Get new KV key => " + pair.getKey());
+                            kvServer.DBput(pair[0], pair[1]);
+                            logger.info("Get new KV key => " + pair[0]);
 
                             writeData(path, "");
                             return;
@@ -585,7 +585,7 @@ public class KVServerWatcher {
 
             dataSemaphore = new CountDownLatch(1);
 
-            writeData(dest, pairToJson(new Pair<>(kv.getKey(), kv.getValue())));
+            writeData(dest, pairToJson(new String[]{kv.getKey(), kv.getValue()}));
 
             exists(dest, transferWatcher);
 
@@ -611,16 +611,16 @@ public class KVServerWatcher {
     }
 
 
-    Pair<String, String> JsonToPair(String data) {
+    String[] JsonToPair(String data) {
 
-        Type Type = new TypeToken<Pair<String, String>>() {
+        Type Type = new TypeToken<String[]>() {
         }.getType();
 
         return gson.fromJson(data, Type);
     }
 
-    String pairToJson(Pair<String, String> kv) {
-        Type Type = new TypeToken<Pair<String, String>>() {
+    String pairToJson(String[] kv) {
+        Type Type = new TypeToken<String[]>() {
         }.getType();
 
         return gson.toJson(kv, Type);
