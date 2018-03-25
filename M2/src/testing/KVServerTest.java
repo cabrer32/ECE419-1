@@ -13,20 +13,22 @@ public class KVServerTest extends TestCase {
     ServerThread thread =  null;
 
     private static final String KVSERVER_NAME = "testserver1";
-    private static final int KVSERVER_PORT = 40000;
+    private static final int KVSERVER_PORT = 50000;
     private static final int CACHE_SIZE = 5;
     private static final String CACHE_STRATEGY = "FIFO";
 
 
-    @BeforeClass
+    @Before
     public void setUp() {
         kvServer = new KVServer(KVSERVER_NAME, "", 0);
         kvServer.initKVServer(KVSERVER_PORT, CACHE_SIZE, CACHE_STRATEGY);
-        ServerThread thread = new ServerThread(kvServer);
+        kvServer.clearStorage();
+        kvServer.run();
+        thread = new ServerThread(kvServer);
         thread.start();
     }
 
-    @AfterClass
+    @After
     public void tearDown() {
         thread.interrupt();
         kvServer.close();
@@ -62,65 +64,27 @@ public class KVServerTest extends TestCase {
     }
 
     @Test
-    public void testInStorage() {
-        // Tested in KVCacheTest
-    }
-
-    @Test
-    public void testInCache() {
-        // Tested in KVCacheTest
-    }
-
-    @Test
-    public void testGetKV() {
-        // Tested in KVCacheTest
-    }
-
-    @Test
-    public void testPutKV() {
-        // Tested in KVCacheTest
-    }
-
-    @Test
-    public void testClearCache() {
-        // Tested in KVCacheTest
-    }
-
-    @Test
-    public void testClearStorage() {
-        // Tested in KVCacheTest
-    }
-
-    @Test
-    public void testRun() {
-    }
-
-    @Test
-    public void testKill() {
-    }
-
-    @Test
-    public void testClose() {
-    }
-
-    @Test
     public void testStart() {
+        kvServer.start();
+        assertEquals("start() failed.", KVServer.KVServerState.RUNNING ,kvServer.getState());
     }
 
     @Test
     public void testStop() {
+        kvServer.stop();
+        assertEquals("start() failed.", KVServer.KVServerState.STOPPED ,kvServer.getState());
     }
 
     @Test
     public void testLockWrite() {
+        kvServer.lockWrite();
+        assertEquals("start() failed.", KVServer.KVServerState.LOCKED ,kvServer.getState());
     }
 
     @Test
     public void testUnlockWrite() {
-    }
-
-    @Test
-    public void testMoveData() {
+        kvServer.unlockWrite();
+        assertEquals("start() failed.", KVServer.KVServerState.RUNNING ,kvServer.getState());
     }
 
     @Test

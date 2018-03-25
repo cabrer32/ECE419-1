@@ -1,36 +1,32 @@
 package testing;
 
 import java.net.UnknownHostException;
-import java.util.ArrayList;
 
+import app_kvECS.ECSClient;
 import app_kvServer.KVServer;
 import client.KVStore;
 
 import common.module.ServerThread;
 import junit.framework.TestCase;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import org.junit.After;
+import org.junit.Before;
 
 
 // Originally ConnectionTest
 public class ConnectionTest extends TestCase {
 
-	private KVServer kvServer = null;
-	ServerThread thread = null;
+	private ECSClient ecsClient;
 
-	@BeforeClass
+	@Before
 	public void setUp() {
-		kvServer = new KVServer("test", "",0);
-		kvServer.initKVServer(50000, 5, "FIFO");
-		kvServer.clearStorage();
-		thread = new ServerThread(kvServer);
-		thread.start();
+		ecsClient = new ECSClient("127.0.0.1",2181,"ecs.config");
+		ecsClient.addNodes(3, "None", 100);
+		ecsClient.start();
 	}
 
-	@AfterClass
+	@After
 	public void tearDown() {
-		thread.interrupt();
-		kvServer.close();
+		ecsClient.shutdown();
 	}
 
 	public void testConnectionSuccess() {

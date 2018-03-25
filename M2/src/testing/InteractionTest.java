@@ -10,28 +10,30 @@ import junit.framework.TestCase;
 import common.messages.KVMessage;
 import common.messages.KVMessage.StatusType;
 
+import java.io.IOException;
+
 
 // originally InteractionTest
 public class InteractionTest extends TestCase {
 
-	private ECSClient ecsClient = null;
-	private KVStore kvClient = null;
+	private KVStore kvClient;
+	private ECSClient ecsClient;
 
-	@BeforeClass
-	public void setUp() throws  Exception{
+	public void setUp() {
 		ecsClient = new ECSClient("127.0.0.1",2181,"ecs.config");
-		ecsClient.addNodes(3, "FIFO", 100);
+		ecsClient.addNodes(3, "None", 100);
 		ecsClient.start();
 		kvClient = new KVStore("localhost", 50000);
-		kvClient.connect();
+		try {
+			kvClient.connect();
+		} catch (Exception e) {
+		}
 	}
 
-	@AfterClass
 	public void tearDown() {
-		ecsClient.shutdown();
 		kvClient.disconnect();
+		ecsClient.shutdown();
 	}
-
 
 	@Test
 	public void testPut() {
@@ -136,7 +138,4 @@ public class InteractionTest extends TestCase {
 
 		assertTrue(ex == null && response.getStatus() == StatusType.GET_ERROR);
 	}
-
-
-
 }

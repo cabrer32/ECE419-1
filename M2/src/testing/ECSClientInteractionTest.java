@@ -22,7 +22,7 @@ public class ECSClientInteractionTest extends TestCase {
     @Before
     public void setUp() throws  Exception{
         ecsClient = new ECSClient("127.0.0.1",2181,"ecs.config");
-        ecsClient.addNodes(3, "FIFO", 100);
+        ecsClient.addNodes(3, "None", 100);
         ecsClient.start();
         kvClient = new KVStore("localhost", 50000);
         kvClient.connect();
@@ -30,8 +30,8 @@ public class ECSClientInteractionTest extends TestCase {
 
     @After
     public void tearDown() {
-        ecsClient.shutdown();
         kvClient.disconnect();
+        ecsClient.shutdown();
     }
 
     @Test

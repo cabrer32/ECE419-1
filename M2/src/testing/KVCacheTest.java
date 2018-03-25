@@ -14,7 +14,7 @@ public class KVCacheTest extends TestCase {
     KVServer server = null;
     ServerThread serverThread = null;
 
-    @AfterClass
+    @After
     protected void tearDown() {
         serverThread.interrupt();
         server.close();

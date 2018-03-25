@@ -129,8 +129,11 @@ public class MetaData implements IMetaData {
 
             ECSNode node = (ECSNode) itr.next();
 
+            boolean x = ((flag > 0) && (node.compareTo(pre) > 0) && (node.compareTo(suc) < 0));
+            boolean y = ((flag < 0) && ((node.compareTo(pre) > 0) || (node.compareTo(suc) < 0)));
+
             if (((flag > 0) && (node.compareTo(pre) > 0) && (node.compareTo(suc) < 0)) ||
-                    (((flag < 0) && (node.compareTo(pre) > 0) || (node.compareTo(suc) < 0)))) {
+                    ((flag < 0) && ((node.compareTo(pre) > 0) || (node.compareTo(suc) < 0)))) {
                 nodes.add(node);
             }
         }

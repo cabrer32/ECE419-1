@@ -17,13 +17,13 @@ public class MetaDataTest extends TestCase {
     public IMetaData metaData = null;
     public String[] serverList = {"server8", "server6", "server1", "server7", "server4", "server3", "server5", "server2"};
 
-    @BeforeClass
+    @Before
     public void setUp() {
-        ECS ecs =  new ECS("",0, "ecs.config");
+        ECS ecs =  new ECS("testMetaData",2181, "ecs.config");
         metaData = new MetaData(ecs.setupNewServers(8,"None", 100));
     }
 
-    @AfterClass
+    @After
     public void tearDown() {
         metaData = null;
     }
@@ -40,9 +40,9 @@ public class MetaDataTest extends TestCase {
     @Test
     public void testGetSuccessor() {
         String successor;
-        for (int i = 0; i < serverList.length-1; i++) {
+        for (int i = serverList.length - 1; i > 0 ; i--) {
             successor = metaData.getPredecessor(serverList[i]);
-            assertEquals("getPredecessor() failed!", serverList[i+1], successor);
+            assertEquals("getPredecessor() failed!", serverList[i-1], successor);
         }
     }
 
@@ -68,10 +68,10 @@ public class MetaDataTest extends TestCase {
 
     @Test
     public void testGetReplica() {
+        getReplicaWrapper("server8", new String[]{"server6", "server1"});
+        metaData.removeNode("server1");
         getReplicaWrapper("server8", new String[]{"server6", "server7"});
-        metaData.removeNode("server7");
-        getReplicaWrapper("server8", new String[]{"server6", "server4"});
-        getReplicaWrapper("server2", new String[]{"server8", "server2"});
+        getReplicaWrapper("server2", new String[]{"server8", "server6"});
     }
 
     private void getReplicaWrapper(String name, String[] expectedArray) {

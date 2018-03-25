@@ -12,20 +12,10 @@ import java.util.Set;
 
 public class ECSClientTest extends TestCase {
 
-    private ECSClient ecsClient = null;
-
-    @BeforeClass
-    public void setUp() {
-        ecsClient = new ECSClient("127.0.0.1",2181,"ecs.config");
-    }
-
-    @AfterClass
-    public void tearDown() {
-        ecsClient = null;
-    }
-
     @Test
     public void testECS() {
+
+        ECSClient ecsClient = new ECSClient("127.0.0.1",2181,"ecs.config");
 
         // for initialization and test result purpose
         int[] addSizes = {3, 2};
