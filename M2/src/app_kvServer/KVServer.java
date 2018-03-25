@@ -9,12 +9,9 @@ import ecs.IECSNode;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 
-import java.util.ArrayList;
+import java.util.*;
 import java.io.IOException;
 import java.net.*;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
 
 
 public class KVServer implements IKVServer {
@@ -272,6 +269,13 @@ public class KVServer implements IKVServer {
 
         db.putKV(key, value);
         logger.info("KV Operation (PUT) in STORAGE: KEY => " + key + ", VALUE => " + value);
+
+        HashMap<String, String> map = new HashMap<>();
+        map.put(key,value);
+
+        for(String name : replicas){
+            zkWatch.moveData(map, name);
+        }
     }
 
     @Override

@@ -14,4 +14,5 @@ public interface IMetaData {
     void addNode(IECSNode node);
     IECSNode removeNode(String name);
     IECSNode getServerByKey(String key);
+    ArrayList<String> getNameList();
 }
