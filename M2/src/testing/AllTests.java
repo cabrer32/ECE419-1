@@ -24,12 +24,12 @@ public class AllTests {
 
         // additional test case after M1
 //        Suite.addTestSuite(ECSClientTest.class);
-        Suite.addTestSuite(ECSClientInteractionTest.class);
+//        Suite.addTestSuite(ECSClientInteractionTest.class);
 //        Suite.addTestSuite(KVCacheTest.class);
 //        Suite.addTestSuite(KVServerTest.class);
 //        Suite.addTestSuite(MetaDataTest.class);
 //        Suite.addTestSuite(ECSNodeTest.class);
-//        Suite.addTestSuite(PerformanceCacheFIFOTest.class);
+        Suite.addTestSuite(PerformanceCacheFIFOTest.class);
 //        Suite.addTestSuite(PerformanceCacheLFUTest.class);
 //        Suite.addTestSuite(PerformanceCacheLRUTest.class);
 //        Suite.addTestSuite(PerformanceCacheNoneTest.class);

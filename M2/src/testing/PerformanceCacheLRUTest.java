@@ -32,6 +32,11 @@ public class PerformanceCacheLRUTest extends TestCase {
         ecsClient.start();
     }
 
+    @After
+    public void tearDown() {
+        ecsClient.shutdown();
+    }
+
     private void testEnron(ArrayList<KVStore> kvClients) {
         File file = new File(ENRON_DATASET_PATH);
         File[] files = file.listFiles();
@@ -83,11 +88,6 @@ public class PerformanceCacheLRUTest extends TestCase {
         }
     }
 
-    @After
-    public void tearDown() {
-        ecsClient.shutdown();
-    }
-
     public void testCacheNone() {
         Random rand = new Random();
         KVStore kvClient;
@@ -100,8 +100,8 @@ public class PerformanceCacheLRUTest extends TestCase {
                 for (int cacheSize = 50; cacheSize <= CACHE_SIZE_MAX; cacheSize += 50) {
                     for (int kvClientNum = 5, step = 5; kvClientNum <= KVCLIENT_MAX; kvClientNum += step) {
 
-                        System.out.println("Server Number: " + (3 + serverAdded) + "|" +
-                                "Cache Size: " + cacheSize + "|" +
+                        System.out.println("Server Number: " + (3 + serverAdded) + " | " +
+                                "Cache Size: " + cacheSize + " | " +
                                 "Client Number: " + kvClientNum);
                         for (int i = 0; i < step; i++) {
                             kvClient = new KVStore("localhost", 50000);
