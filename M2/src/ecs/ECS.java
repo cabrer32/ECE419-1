@@ -18,8 +18,8 @@ public class ECS {
 //	private static final String SCRIPT_TEXT = "ssh -n %s nohup java -jar /nfs/ug/homes-4/w/wuzhensh/m2/ece419/M2/m2-server.jar %s %s %s %s %s %s &";
     // private static final String SCRIPT_TEXT = "ssh -n %s nohup java -jar /Users/wuqili/Desktop/ECE419/M2/m2-server.jar %s %s %s %s %s %s &";
 //    private static final String SCRIPT_TEXT = "ssh -n %s nohup java -jar /Users/pannnnn/UTcourses/ECE419/Milestones/ece419/M2/m2-server.jar %s %s %s %s %s %s &";
-//    private static final String SCRIPT_TEXT = "ssh -n %s nohup java -jar /Users/wuqili/Desktop/ECE419/M2/m2-server.jar %s %s %s %s %s %s &";
-    private static final String SCRIPT_TEXT = "ssh -n %s nohup java -jar /Users/pannnnn/UTcourses/ECE419/Milestones/ece419/M2/m2-server.jar %s %s %s %s %s %s &";
+    private static final String SCRIPT_TEXT = "ssh -n %s nohup java -jar /Users/wuqili/Desktop/ECE419/M2/m2-server.jar %s %s %s %s %s %s &";
+//    private static final String SCRIPT_TEXT = "ssh -n %s nohup java -jar /Users/pannnnn/UTcourses/ECE419/Milestones/ece419/M2/m2-server.jar %s %s %s %s %s %s &";
 
     private ECSWatcher zkWatch;
 
