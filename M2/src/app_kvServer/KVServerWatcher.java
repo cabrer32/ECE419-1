@@ -470,6 +470,7 @@ public class KVServerWatcher {
                 kvServer.setMetaData(meta);
                 kvServer.replicas = meta.getReplica(KVname);
                 kvServer.predecessor = meta.getPredecessor(KVname);
+                signalECS();
                 break;
             case "G":
                 logger.info("--- Kill Server ---");

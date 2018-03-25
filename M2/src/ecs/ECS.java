@@ -105,7 +105,11 @@ public class ECS {
     public void updateServerMeta() {
         logger.info("--- Updating server meta ---");
 
+        zkWatch.setSemaphore(meta.getServerRepo().size());
+
         broadcastMeta("F");
+
+        awaitNodes(100000000);
 
         logger.info("- Done! -");
     }
@@ -233,7 +237,7 @@ public class ECS {
         removeDetectors(meta.getNameList());
 
         broadcastMeta("G");
-        
+
         boolean flag = zkWatch.deleteAllNodes(meta.getServerRepo());
         zkWatch.releaseConnection();
         return flag;
