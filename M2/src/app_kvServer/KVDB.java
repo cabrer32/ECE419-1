@@ -204,9 +204,6 @@ public class KVDB {
 
     public HashMap<String, String> getRangeKV(String[] range) throws IOException {
 
-
-
-
         String from = range[0];
         String to = range[1];
 
@@ -219,27 +216,26 @@ public class KVDB {
 
             String key = getKeyAtBlock(count);
 
-
-            MessageDigest md;
-            String keyHashValue = null;
-            try {
-                md = MessageDigest.getInstance("MD5");
-                md.update(key.getBytes());
-                byte[] digest = md.digest();
-                keyHashValue = DatatypeConverter.printHexBinary(digest).toUpperCase();
-            } catch (NoSuchAlgorithmException e) {
-                logger.error("Cannot transfer hash " + e.getMessage());
-            }
-
-
-
             if (!key.equals("")) {
+
+
+                MessageDigest md;
+                String keyHashValue = null;
+                try {
+                    md = MessageDigest.getInstance("MD5");
+                    md.update(key.getBytes());
+                    byte[] digest = md.digest();
+                    keyHashValue = DatatypeConverter.printHexBinary(digest).toUpperCase();
+                } catch (NoSuchAlgorithmException e) {
+                    logger.error("Cannot transfer hash " + e.getMessage());
+                }
+
                 if (edge) {
-                    if (keyHashValue.compareTo(from) <= 0 || keyHashValue.compareTo(to) >= 0) {
+                    if (keyHashValue.compareTo(from) >= 0 || keyHashValue.compareTo(to) < 0) {
                         map.put(key, getValueAtBlock(count));
                     }
                 } else {
-                    if (keyHashValue.compareTo(from) >= 0 && keyHashValue.compareTo(to) <= 0) {
+                    if (keyHashValue.compareTo(from) >= 0 && keyHashValue.compareTo(to) < 0) {
                         map.put(key, getValueAtBlock(count));
                     }
                 }
@@ -265,12 +261,24 @@ public class KVDB {
 
             String key = getKeyAtBlock(count);
             if (!key.equals("")) {
+
+                MessageDigest md;
+                String keyHashValue = null;
+                try {
+                    md = MessageDigest.getInstance("MD5");
+                    md.update(key.getBytes());
+                    byte[] digest = md.digest();
+                    keyHashValue = DatatypeConverter.printHexBinary(digest).toUpperCase();
+                } catch (NoSuchAlgorithmException e) {
+                    logger.error("Cannot transfer hash " + e.getMessage());
+                }
+
                 if (edge) {
-                    if (key.compareTo(from) <= 0 || key.compareTo(to) >= 0) {
+                    if (keyHashValue.compareTo(from) >= 0 || keyHashValue.compareTo(to) < 0) {
                         writeKeyValueAtBlock(count, key, "");
                     }
                 } else {
-                    if (key.compareTo(from) >= 0 && key.compareTo(to) <= 0) {
+                    if (keyHashValue.compareTo(from) >= 0 && keyHashValue.compareTo(to) < 0) {
                         writeKeyValueAtBlock(count, key, "");
                     }
                 }

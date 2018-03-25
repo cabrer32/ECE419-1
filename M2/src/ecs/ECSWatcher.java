@@ -252,7 +252,7 @@ public class ECSWatcher {
 
                 while(exists(CHILDREN_PATH + node.getNodeName(),null) != null &&
                         !deleteNode(CHILDREN_PATH + node.getNodeName())) {
-                    deleteNode(CHILDREN_PATH + node.getNodeName() + "/data" + i);
+                    deleteNode(CHILDREN_PATH + node.getNodeName() + "/server" + i);
                     i++;
                 }
             }
