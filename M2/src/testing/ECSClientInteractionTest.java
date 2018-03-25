@@ -39,13 +39,14 @@ public class ECSClientInteractionTest extends TestCase {
         Map<String, IECSNode> originalNodesMap = ecsClient.getNodes();
         try {
             for (int i = 1; i <= 1000; i++) {
-                kvClient.put("Replication-" + Integer.toString(i), Integer.toString(i));
+                kvClient.put("DataTransfer-" + Integer.toString(i), Integer.toString(i));
             }
         } catch (Exception e) {
             assertTrue("kvClient put key failed!", false);
         }
 
-        Collection<IECSNode> addedNodes =  ecsClient.addNodes(3, "FIFO", 100);
+        Collection<IECSNode> addedNodes =  ecsClient.addNodes(3, "None", 100);
+
 
         assertTrue("failed to remove nodes!", ecsClient.removeNodes(originalNodesMap.keySet()));
 
