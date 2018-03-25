@@ -38,7 +38,6 @@ public class ECSClientInteractionTest extends TestCase {
 
     @Test
     public void testLoad() {
-        Map<String, IECSNode> originalNodesMap = ecsClient.getNodes();
         KVMessage kvMessage = null;
         try {
             for (int i = 1; i <= 50; i++) {

@@ -27,10 +27,12 @@ public class AllTests {
         Suite.addTestSuite(ECSClientInteractionTest.class);
 //        Suite.addTestSuite(KVCacheTest.class);
 //        Suite.addTestSuite(KVServerTest.class);
-        //may need to be removed
 //        Suite.addTestSuite(MetaDataTest.class);
 //        Suite.addTestSuite(ECSNodeTest.class);
-//        Suite.addTestSuite(PerformanceTest.class);
+//        Suite.addTestSuite(PerformanceCacheFIFOTest.class);
+//        Suite.addTestSuite(PerformanceCacheLFUTest.class);
+//        Suite.addTestSuite(PerformanceCacheLRUTest.class);
+//        Suite.addTestSuite(PerformanceCacheNoneTest.class);
 
         return Suite;
     }
