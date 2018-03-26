@@ -108,7 +108,7 @@ public class KVServerWatcher {
         this.KVname = name;
         this.nodePath = ROOT_PATH + "/" + name;
 
-        Logger.getLogger("org.apache.zookeeper").setLevel(Level.INFO);
+        Logger.getLogger("org.apache.zookeeper").setLevel(Level.ERROR);
 
         gson = new Gson();
     }
@@ -292,15 +292,30 @@ public class KVServerWatcher {
 
                 if (keeperState == KeeperState.SyncConnected) {
                     switch (eventType) {
-                        case NodeCreated:
+                        case NodeDataChanged:
+
                             String data = readData(path, this);
+
+                            if(data.equals("")){
+                                logger.debug("Irrelevant change.");
+                                return;
+                            }
+
                             String[] pair = JsonToPair(data);
 
                             kvServer.DBput(pair[0], pair[1]);
                             logger.info("Get new KV key => " + pair[0]);
 
-                            deleteNode(path);
-                            break;
+
+                            try{
+                                CountDownLatch cl = new CountDownLatch(1);
+                                cl.await(100, TimeUnit.MILLISECONDS);
+                            }catch(Exception e){
+                                logger.error("Cannot watch new data sema");
+                            }
+
+
+                            writeData(path, "");
                         default:
                             exists(path, this);
                             logger.debug("Irrelevant change.");
@@ -330,7 +345,7 @@ public class KVServerWatcher {
 
                 if (keeperState == KeeperState.SyncConnected) {
                     switch (eventType) {
-                        case NodeDeleted:
+                        case NodeDataChanged:
                             logger.info("Finish transfer one KV pair.");
                             dataSemaphore.countDown();
                             break;
@@ -449,6 +464,17 @@ public class KVServerWatcher {
 
         Iterator it = map.entrySet().iterator();
 
+
+        createPath(dest,"");
+
+        try{
+            CountDownLatch cl = new CountDownLatch(1);
+            cl.await(100, TimeUnit.MILLISECONDS);
+        }catch(Exception e){
+            logger.error("Cannot watch new data sema");
+        }
+
+
         logger.info("Start transfering data to " + targetName + " with size " + map.size());
 
         while (it.hasNext()) {
@@ -458,17 +484,27 @@ public class KVServerWatcher {
 
             dataSemaphore = new CountDownLatch(1);
 
-            createPath(dest, pairToJson(new String[]{kv.getKey(), kv.getValue()}));
+            writeData(dest,  pairToJson(new String[]{kv.getKey(), kv.getValue()}));
+
             exists(dest, transferWatcher);
 
             try{
-                if(dataSemaphore.await(2000, TimeUnit.MILLISECONDS))
-                    logger.error("Transfer time out! ");
+                if(dataSemaphore.await(1000, TimeUnit.MILLISECONDS))
+                    logger.warn("Transfer time out! ");
             }catch(Exception e){
                 logger.error("Cannot watch new data sema");
             }
 
         }
+
+        try{
+            CountDownLatch cl = new CountDownLatch(1);
+            cl.await(50, TimeUnit.MILLISECONDS);
+        }catch(Exception e){
+            logger.error("Cannot watch new data sema");
+        }
+
+        deleteNode(dest);
 
         logger.info("Done!");
     }

@@ -25,11 +25,13 @@ public class ECSClientInteractionTest extends TestCase {
 
     @Before
     public void setUp() throws  Exception{
+
         try {
             new LogSetup("logs/testing/test.log", Level.ALL);
         } catch (Exception e) {
             e.printStackTrace();
         }
+
 
         ecsClient = new ECSClient("127.0.0.1",2181,"ecs.config");
         ecsClient.addNodes(3, "None", 100);
