@@ -15,11 +15,11 @@ public class ECSNode implements IECSNode, Comparable<ECSNode>{
 
     public ECSNode (){}
 
-    public ECSNode(String name, String host, int port, String startingHashValue) {
+    public ECSNode(String name, String host, int port, String endingHashValue) {
         this.name = name;
         this.host = host;
         this.port = port;
-        this.startingHashValue = startingHashValue;
+        this.endingHashValue = endingHashValue;
     }
 
     @Override

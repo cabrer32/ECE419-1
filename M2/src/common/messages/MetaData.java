@@ -30,16 +30,17 @@ public class MetaData implements IMetaData {
 
             ECSNode node = (ECSNode) serverArray.get(i);
 
-            if (i == (serverArray.size() - 1))
-                node.setEndingHashValue(serverArray.get(0).getNodeHashRange()[0]);
-
+            if (i == 0)
+                node.setStartingHashValue(serverArray.get(serverArray.size() - 1).getNodeHashRange()[1]);
             else
-                node.setEndingHashValue(serverArray.get(i + 1).getNodeHashRange()[0]);
+                node.setStartingHashValue(serverArray.get(i - 1).getNodeHashRange()[1]);
 
         }
 
         serverRepo = new TreeSet<>(serverArray);
     }
+
+
 
     public TreeSet<IECSNode> getServerRepo() {
         return serverRepo;

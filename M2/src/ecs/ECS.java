@@ -67,8 +67,8 @@ public class ECS {
                 MessageDigest md = MessageDigest.getInstance("MD5");
                 md.update(hashKey.getBytes());
                 byte[] digest = md.digest();
-                String startingHash = DatatypeConverter.printHexBinary(digest).toUpperCase();
-                node = new ECSNode(name, host, port, startingHash);
+                String endingHash = DatatypeConverter.printHexBinary(digest).toUpperCase();
+                node = new ECSNode(name, host, port, endingHash);
                 avaServer.add(node);
             }
         } catch (FileNotFoundException e) {
