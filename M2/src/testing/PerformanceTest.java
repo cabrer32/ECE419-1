@@ -1,8 +1,10 @@
 package testing;
 
+import app_kvClient.KVClient;
 import app_kvECS.ECSClient;
 import client.KVStore;
 import common.messages.KVMessage;
+import common.module.ClientThread;
 import junit.framework.TestCase;
 import org.junit.After;
 import org.junit.Before;
@@ -14,6 +16,7 @@ import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Random;
+import java.util.concurrent.CountDownLatch;
 
 public class PerformanceTest extends TestCase {
 
@@ -24,14 +27,14 @@ public class PerformanceTest extends TestCase {
     private final int KVCLIENT_MAX = 100;
     private final int WARM_UP_TIMES = 10;
 
-//    private final String ENRON_DATASET_PATH = "/Users/pannnnn/maildir/watson-k/questar/";
+    //    private final String ENRON_DATASET_PATH = "/Users/pannnnn/maildir/watson-k/questar/";
     private final String ENRON_DATASET_PATH = "/Users/pannnnn/maildir/watson-k/capacity/";
 
     private ECSClient ecsClient;
 
     @Before
     public void setUp() {
-        ecsClient = new ECSClient("127.0.0.1",2181,"ecs.config");
+        ecsClient = new ECSClient("127.0.0.1", 2181, "ecs.config");
         ecsClient.addNodes(SERVER_NUM, CACHE_STRATEGY, CACHE_SIZE);
         ecsClient.start();
     }
@@ -41,87 +44,24 @@ public class PerformanceTest extends TestCase {
         ecsClient.shutdown();
     }
 
-    private void testEnron(ArrayList<KVStore> kvClients) {
-        File file = new File(ENRON_DATASET_PATH);
-//        File[] files = file.listFiles();
-        try {
-            for (int i = 0; i< kvClients.size(); i++) {
-//                System.out.println("================= " + "Client " + (i+1) + " =================" );
-                putFromFiles(file, kvClients.get(i));
-            }
-            for (int j = 0; j< kvClients.size(); j++) {
-//                System.out.println("================= " + "Client " + (j+1) + " =================" );
-                getFromFiles(file, kvClients.get(j));
-            }
-        } catch (ArrayIndexOutOfBoundsException e) {
-            System.out.println("File resources used up!");
-        }
-    }
 
-    private HashMap<String, String> getFromFile(File file){
+    private HashMap<String, String> getFromFile(File file) {
+
+        HashMap<String, String> map = new HashMap<>();
+
         for (File temp : file.listFiles()) {
             try {
                 String value = new String(Files.readAllBytes(temp.toPath()));
-                value = value.length() > 1000 ? value.substring(0,1000) : value;
+                value = value.length() > 1000 ? value.substring(0, 1000) : value;
                 String key = temp.getPath();
-                key = key.length() > 20 ? key.substring(0,20) : key;
-                client.put(key, value);
+                key = key.length() > 20 ? key.substring(0, 20) : key;
+                map.put(key, value);
             } catch (IOException e) {
                 System.out.println("Read file " + temp.getAbsoluteFile() + "failed ... ");
             }
         }
-    }
 
-    private void putFromFiles(File file, KVStore client) {
-        if (file.isDirectory()) {
-//            System.out.println("Searching directory ... " + file.getAbsoluteFile());
-            for (File temp : file.listFiles()) {
-                if (temp.isDirectory()) {
-                    putFromFiles(temp, client);
-                } else {
-                    try {
-                        String value = new String(Files.readAllBytes(temp.toPath()));
-                        value = value.length() > 1000 ? value.substring(0,1000) : value;
-                        String key = temp.getPath();
-                        key = key.length() > 20 ? key.substring(0,20) : key;
-                        client.put(key, value);
-                    } catch (IOException e) {
-                        System.out.println("Read file " + temp.getAbsoluteFile() + "failed ... ");
-                    }
-                }
-            }
-        }
-    }
-
-//    void test() {
-//        for (File temp : file.listFiles()) {
-//            try {
-//                String key = temp.getPath();
-//                key = key.length() > 20 ? key.substring(0,20) : key;
-//                client.get(key);
-//            } catch (IOException e) {
-//                System.out.println("Read file " + temp.getAbsoluteFile() + "failed ... ");
-//            }
-//        }
-//    }
-
-    private void getFromFiles(File file, KVStore client) {
-        if (file.isDirectory()) {
-//            System.out.println("Searching directory ... " + file.getAbsoluteFile());
-            for (File temp : file.listFiles()) {
-                if (temp.isDirectory()) {
-                    getFromFiles(temp, client);
-                } else {
-                    try {
-                        String key = temp.getPath();
-                        key = key.length() > 20 ? key.substring(0,20) : key;
-                        client.get(key);
-                    } catch (IOException e) {
-                        System.out.println("Read file " + temp.getAbsoluteFile() + "failed ... ");
-                    }
-                }
-            }
-        }
+        return map;
     }
 
     @Test
@@ -133,31 +73,45 @@ public class PerformanceTest extends TestCase {
             System.out.println(" Server Number | Cache Strategy | Cache Size ");
             System.out.println("================= " + SERVER_NUM + " | " + CACHE_STRATEGY + " | " + CACHE_SIZE + " =================");
 
-            ArrayList<KVStore> KVClients = new ArrayList<>();
+            File file = new File(ENRON_DATASET_PATH);
+            HashMap<String, String> data = getFromFile(file);
+
+
             for (int kvClientNum = 5; kvClientNum < KVCLIENT_MAX; kvClientNum += 5) {
 
-                System.out.println("Server Number: " + 5 + " | " +
-                        "Client Number: " + kvClientNum);
-                for (int i = 0; i < 5; i++) {
+
+                ArrayList<KVStore> KVClients = new ArrayList<>();
+
+                System.out.println("Server Number: " + SERVER_NUM + " | " + "Client Number: " + kvClientNum);
+                for (int i = 0; i < kvClientNum; i++) {
                     kvClient = new KVStore("localhost", 50007);
                     kvClient.connect();
-                    // warm up the storage service, try to hit all servers.
-//                    for (int j = 0; j <= WARM_UP_TIMES; j++) {
-//                        int ran = rand.nextInt();
-//                        kvClient.put("WARM-UP-" + Integer.toString(ran), Integer.toString(ran));
-//                        kvClient.put("WARM-UP-" + Integer.toString(ran), "");
-//                    }
                     KVClients.add(kvClient);
                 }
-
                 long start = System.currentTimeMillis();
 
-                testEnron(KVClients);
+                CountDownLatch CL = new CountDownLatch(KVClients.size());
+
+
+                for (KVStore client : KVClients) {
+                    ClientThread ct = new ClientThread(data, CL, client);
+                }
+
+                try{
+                    CL.await();
+                }catch (Exception e){
+                    System.out.println("error " + e);
+                }
+
+
 
                 long end = System.currentTimeMillis();
-
                 System.out.println("Processing time: " + (end - start) + "ms");
                 System.out.println();
+
+                for (int i = 0; i < kvClientNum; i++) {
+                    KVClients.get(i).disconnect();
+                }
             }
         } catch (Exception e) {
             System.out.println("None cache test failed " + e);
