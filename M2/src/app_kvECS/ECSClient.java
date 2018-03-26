@@ -23,7 +23,7 @@ public class ECSClient implements IECSClient {
 
 
     public ECSClient(String zkHostname, int zkPort, String configFileName) {
-        ecs = new ECS(zkHostname, zkPort, configFileName);
+        ecs = new ECS(zkHostname, zkPort, configFileName,this);
     }
 
     @Override

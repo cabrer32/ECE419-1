@@ -1,5 +1,6 @@
 package ecs;
 
+import app_kvECS.ECSClient;
 import common.messages.MetaData;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
@@ -14,7 +15,7 @@ import java.util.*;
 
 public class ECS {
     private static Logger logger = Logger.getRootLogger();
-    private static final String SCRIPT_TEXT = "ssh -n %s nohup java -jar /m2-server.jar %s %s %s %s %s %s &";
+    private static final String SCRIPT_TEXT = "ssh -n %s nohup java -jar ./m2-server.jar %s %s %s %s %s %s &";
 
     private ECSWatcher zkWatch;
 
@@ -28,10 +29,12 @@ public class ECS {
 
     private HashMap<String, ECSDetector> detectors;
 
+    private ECSClient client;
+
     /**
      * Initialize
      **/
-    public ECS(String zkHostname, int zkPort, String configFileName) {
+    public ECS(String zkHostname, int zkPort, String configFileName, ECSClient client) {
         loadFile(configFileName);
 
         Logger.getLogger("org.apache.zookeeper").setLevel(Level.ERROR);
@@ -44,6 +47,7 @@ public class ECS {
 
         meta = new MetaData(new TreeSet<IECSNode>());
         detectors = new HashMap<>();
+        this.client = client;
     }
 
     private void loadFile(String configFileName) {
@@ -268,5 +272,7 @@ public class ECS {
 
         removeServers(list, false);
         detectors.remove(node.getNodeName());
+
+        client.addNodes(1, ((ECSNode) node).getCacheStrategy(), ((ECSNode) node).getCachesize());
     }
 }
