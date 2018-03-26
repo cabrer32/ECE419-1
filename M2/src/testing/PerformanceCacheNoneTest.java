@@ -16,10 +16,12 @@ import java.util.Random;
 
 public class PerformanceCacheNoneTest extends TestCase {
 
+    private final int CACHE_SIZE = 50;
+    private final String CACHE_STRATEGY = "None";
+
     private final int STORAGE_SERVER_MAX = 100;
-    private final int CACHE_SIZE_MAX = 500;
     private final int KVCLIENT_MAX = 100;
-    private final int WARM_UP_TIMES = 30;
+    private final int WARM_UP_TIMES = 10;
 
     private final String ENRON_DATASET_PATH = "/Users/pannnnn/maildir/";
 
@@ -28,7 +30,7 @@ public class PerformanceCacheNoneTest extends TestCase {
     @Before
     public void setUp() {
         ecsClient = new ECSClient("127.0.0.1",2181,"ecs.config");
-        ecsClient.addNodes(5, "None", 100);
+        ecsClient.addNodes(5, CACHE_STRATEGY, CACHE_SIZE);
         ecsClient.start();
     }
 
@@ -61,7 +63,7 @@ public class PerformanceCacheNoneTest extends TestCase {
                 } else {
                     try {
                         String value = new String(Files.readAllBytes(temp.toPath()));
-                        client.put(temp.getPath(), value);
+                        client.put(temp.getPath().substring(0,20), value.substring(0,1000));
                     } catch (IOException e) {
                         System.out.println("Read file " + temp.getAbsoluteFile() + "failed ... ");
                     }
@@ -78,8 +80,7 @@ public class PerformanceCacheNoneTest extends TestCase {
                     getFromFiles(temp, client);
                 } else {
                     try {
-                        String value = new String(Files.readAllBytes(temp.toPath()));
-                        client.get(temp.getPath());
+                        client.get(temp.getPath().substring(0,20));
                     } catch (IOException e) {
                         System.out.println("Read file " + temp.getAbsoluteFile() + "failed ... ");
                     }
@@ -92,43 +93,40 @@ public class PerformanceCacheNoneTest extends TestCase {
     public void testCacheNone() {
         Random rand = new Random();
         KVStore kvClient;
-        KVMessage kvMessage;
 
         try {
-            System.out.println("================= None CACHE =================");
+            System.out.println("================= " +  CACHE_STRATEGY + " | " + CACHE_SIZE + " =================");
             System.out.println();
 
-            for (int kvServerNum = 5; kvServerNum < STORAGE_SERVER_MAX; kvServerNum+=5) {
-                for (int cacheSize = 50; cacheSize <= CACHE_SIZE_MAX; cacheSize += 50) {
-                    ArrayList<KVStore> KVClients = new ArrayList<>();
-                    for (int kvClientNum = 5; kvClientNum <= KVCLIENT_MAX; kvClientNum += 5) {
+//            for (int kvServerNum = 5; kvServerNum < STORAGE_SERVER_MAX; kvServerNum += 5) {
+            ArrayList<KVStore> KVClients = new ArrayList<>();
+            for (int kvClientNum = 5; kvClientNum < KVCLIENT_MAX; kvClientNum += 5) {
 
-                        System.out.println("Server Number: " + kvServerNum + " | " +
-                                "Cache Size: " + cacheSize + " | " +
-                                "Client Number: " + kvClientNum);
-                        for (int i = 0; i < 5; i++) {
-                            kvClient = new KVStore("localhost", 50000);
-                            kvClient.connect();
-                            // warm up the storage service, try to hit all servers.
-                            for (int j = 0; j <= WARM_UP_TIMES; j++) {
-                                int ran = rand.nextInt();
-                                kvClient.put("WARM-UP-" + Integer.toString(ran), Integer.toString(ran));
-                                kvClient.put("WARM-UP-" + Integer.toString(ran), "");
-                            }
-                            KVClients.add(kvClient);
-                        }
-
-                        long start = System.currentTimeMillis();
-
-                        testEnron(KVClients);
-
-                        long end = System.currentTimeMillis();
-
-                        System.out.println("Processing time: " + (end - start) + "ms");
-                        System.out.println();
+                System.out.println("Server Number: " + 5 + " | " +
+                        "Client Number: " + kvClientNum);
+                for (int i = 0; i < 5; i++) {
+                    kvClient = new KVStore("localhost", 50007);
+                    kvClient.connect();
+                    // warm up the storage service, try to hit all servers.
+                    for (int j = 0; j <= WARM_UP_TIMES; j++) {
+                        int ran = rand.nextInt();
+                        kvClient.put("WARM-UP-" + Integer.toString(ran), Integer.toString(ran));
+                        kvClient.put("WARM-UP-" + Integer.toString(ran), "");
                     }
+                    KVClients.add(kvClient);
                 }
+
+                long start = System.currentTimeMillis();
+
+                testEnron(KVClients);
+
+                long end = System.currentTimeMillis();
+
+                System.out.println("Processing time: " + (end - start) + "ms");
+                System.out.println();
             }
+//                ecsClient.addNodes(5, CACHE_STRATEGY,CACHE_SIZE);
+//            }
         } catch (Exception e) {
             assertTrue(false);
             System.out.println("None cache test failed " + e);

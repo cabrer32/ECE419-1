@@ -23,6 +23,7 @@ public class AllTests {
         Suite.addTestSuite(InteractionTest.class);
 
         // additional test case after M1
+<<<<<<< HEAD
         Suite.addTestSuite(ECSClientTest.class);
         Suite.addTestSuite(ECSClientInteractionTest.class);
         Suite.addTestSuite(KVCacheTest.class);
@@ -33,6 +34,15 @@ public class AllTests {
 //        Suite.addTestSuite(PerformanceCacheLFUTest.class);
 //        Suite.addTestSuite(PerformanceCacheLRUTest.class);
 //        Suite.addTestSuite(PerformanceCacheNoneTest.class);
+=======
+//        Suite.addTestSuite(ECSClientTest.class);
+//        Suite.addTestSuite(ECSClientInteractionTest.class);
+//        Suite.addTestSuite(KVCacheTest.class);
+//        Suite.addTestSuite(KVServerTest.class);
+//        Suite.addTestSuite(MetaDataTest.class);
+//        Suite.addTestSuite(ECSNodeTest.class);
+        Suite.addTestSuite(PerformanceCacheNoneTest.class);
+>>>>>>> 45b6bf76385fa8aadfcda90202e85f64a31fef33
 //        Suite.addTestSuite(PerformanceScale.class);
 
         return Suite;
