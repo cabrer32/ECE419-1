@@ -28,7 +28,7 @@ public class AllTests {
         Suite.addTestSuite(KVCacheTest.class);
         Suite.addTestSuite(KVServerTest.class);
         Suite.addTestSuite(MetaDataTest.class);
-//        Suite.addTestSuite(ECSNodeTest.class);
+        Suite.addTestSuite(ECSNodeTest.class);
         Suite.addTestSuite(PerformanceTest.class);
 //        Suite.addTestSuite(PerformanceScale.class);
 
