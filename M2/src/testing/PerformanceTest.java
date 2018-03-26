@@ -12,6 +12,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Random;
 
 public class PerformanceTest extends TestCase {
@@ -57,6 +58,20 @@ public class PerformanceTest extends TestCase {
         }
     }
 
+    private HashMap<String, String> getFromFile(File file){
+        for (File temp : file.listFiles()) {
+            try {
+                String value = new String(Files.readAllBytes(temp.toPath()));
+                value = value.length() > 1000 ? value.substring(0,1000) : value;
+                String key = temp.getPath();
+                key = key.length() > 20 ? key.substring(0,20) : key;
+                client.put(key, value);
+            } catch (IOException e) {
+                System.out.println("Read file " + temp.getAbsoluteFile() + "failed ... ");
+            }
+        }
+    }
+
     private void putFromFiles(File file, KVStore client) {
         if (file.isDirectory()) {
 //            System.out.println("Searching directory ... " + file.getAbsoluteFile());
@@ -77,6 +92,18 @@ public class PerformanceTest extends TestCase {
             }
         }
     }
+
+//    void test() {
+//        for (File temp : file.listFiles()) {
+//            try {
+//                String key = temp.getPath();
+//                key = key.length() > 20 ? key.substring(0,20) : key;
+//                client.get(key);
+//            } catch (IOException e) {
+//                System.out.println("Read file " + temp.getAbsoluteFile() + "failed ... ");
+//            }
+//        }
+//    }
 
     private void getFromFiles(File file, KVStore client) {
         if (file.isDirectory()) {
