@@ -29,7 +29,7 @@ public class AllTests {
 //        Suite.addTestSuite(KVServerTest.class);
 //        Suite.addTestSuite(MetaDataTest.class);
 //        Suite.addTestSuite(ECSNodeTest.class);
-        Suite.addTestSuite(PerformanceCacheNoneTest.class);
+        Suite.addTestSuite(PerformanceTest.class);
 //        Suite.addTestSuite(PerformanceScale.class);
 
         return Suite;
