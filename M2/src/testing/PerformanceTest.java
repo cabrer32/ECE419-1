@@ -95,6 +95,7 @@ public class PerformanceTest extends TestCase {
 
                 for (KVStore client : KVClients) {
                     ClientThread ct = new ClientThread(data, CL, client);
+                    new Thread(ct).start();
                 }
 
                 try{
@@ -102,7 +103,6 @@ public class PerformanceTest extends TestCase {
                 }catch (Exception e){
                     System.out.println("error " + e);
                 }
-
 
 
                 long end = System.currentTimeMillis();
