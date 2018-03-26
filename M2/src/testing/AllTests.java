@@ -19,20 +19,21 @@ public class AllTests {
         TestSuite Suite = new TestSuite("Basic Storage ServerTest-Suite");
 
         // inherit from M1
-        Suite.addTestSuite(ConnectionTest.class);
-        Suite.addTestSuite(InteractionTest.class);
+//        Suite.addTestSuite(ConnectionTest.class);
+//        Suite.addTestSuite(InteractionTest.class);
 
         // additional test case after M1
-        Suite.addTestSuite(ECSClientTest.class);
-        Suite.addTestSuite(ECSClientInteractionTest.class);
-        Suite.addTestSuite(KVCacheTest.class);
-        Suite.addTestSuite(KVServerTest.class);
-        Suite.addTestSuite(MetaDataTest.class);
-        Suite.addTestSuite(ECSNodeTest.class);
+//        Suite.addTestSuite(ECSClientTest.class);
+//        Suite.addTestSuite(ECSClientInteractionTest.class);
+//        Suite.addTestSuite(KVCacheTest.class);
+//        Suite.addTestSuite(KVServerTest.class);
+//        Suite.addTestSuite(MetaDataTest.class);
+//        Suite.addTestSuite(ECSNodeTest.class);
 //        Suite.addTestSuite(PerformanceCacheFIFOTest.class);
 //        Suite.addTestSuite(PerformanceCacheLFUTest.class);
 //        Suite.addTestSuite(PerformanceCacheLRUTest.class);
-//        Suite.addTestSuite(PerformanceCacheNoneTest.class);
+        Suite.addTestSuite(PerformanceCacheNoneTest.class);
+//        Suite.addTestSuite(PerformanceScale.class);
 
         return Suite;
     }
