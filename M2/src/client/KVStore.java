@@ -160,7 +160,6 @@ public class KVStore implements KVCommInterface {
         while (response == null)
             response = handleServerLogic(msgReq);
 
-
         if (listener != null) {
             listener.handleNewMessage(response.getStatus().toString());
         }
@@ -178,7 +177,7 @@ public class KVStore implements KVCommInterface {
             response = handleServerLogic(msgReq);
 
         if (listener != null) {
-            listener.handleNewMessage(response.getStatus().toString());
+            listener.handleNewMessage(response.getStatus().toString() + " " + response.getValue());
         }
         return response;
     }
