@@ -6,6 +6,7 @@ import common.messages.KVMessage;
 import junit.framework.TestCase;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
@@ -23,7 +24,6 @@ public class PerformanceCacheNoneTest extends TestCase {
     private final String ENRON_DATASET_PATH = "/Users/pannnnn/maildir/";
 
     private ECSClient ecsClient;
-    private ArrayList<KVStore> KVClients = new ArrayList<>();
 
     @Before
     public void setUp() {
@@ -88,6 +88,7 @@ public class PerformanceCacheNoneTest extends TestCase {
         }
     }
 
+    @Test
     public void testCacheNone() {
         Random rand = new Random();
         KVStore kvClient;
@@ -99,6 +100,7 @@ public class PerformanceCacheNoneTest extends TestCase {
 
             for (int kvServerNum = 5; kvServerNum < STORAGE_SERVER_MAX; kvServerNum+=5) {
                 for (int cacheSize = 50; cacheSize <= CACHE_SIZE_MAX; cacheSize += 50) {
+                    ArrayList<KVStore> KVClients = new ArrayList<>();
                     for (int kvClientNum = 5; kvClientNum <= KVCLIENT_MAX; kvClientNum += 5) {
 
                         System.out.println("Server Number: " + kvServerNum + " | " +

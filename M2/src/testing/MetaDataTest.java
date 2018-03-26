@@ -11,6 +11,7 @@ import org.junit.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.TreeSet;
 
 public class MetaDataTest extends TestCase {
 
@@ -19,8 +20,16 @@ public class MetaDataTest extends TestCase {
 
     @Before
     public void setUp() {
-        ECS ecs =  new ECS("testMetaData",2181, "ecs.config");
-        metaData = new MetaData(ecs.setupNewServers(8,"None", 100));
+
+
+        TreeSet<IECSNode> list = new TreeSet<>();
+
+
+        for(int i = 0 ; i < serverList.length; i++) {
+            list.add(new ECSNode(serverList[i], "127.0.0.1", 50007, Integer.toString(i)));
+        }
+        metaData = new MetaData(list);
+
     }
 
     @After
