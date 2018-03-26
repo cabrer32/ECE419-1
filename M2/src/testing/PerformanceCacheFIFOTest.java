@@ -28,7 +28,7 @@ public class PerformanceCacheFIFOTest extends TestCase {
     @Before
     public void setUp() {
         ecsClient = new ECSClient("127.0.0.1",2181,"ecs.config");
-        ecsClient.addNodes(3, "FIFO", 100);
+        ecsClient.addNodes(5, "FIFO", 100);
         ecsClient.start();
     }
 
@@ -96,14 +96,14 @@ public class PerformanceCacheFIFOTest extends TestCase {
             System.out.println("================= FIFO CACHE =================");
             System.out.println();
 
-            for (int serverAdded = 0; serverAdded < STORAGE_SERVER_MAX - 3; serverAdded++) {
+            for (int kvServerNum = 5; kvServerNum < STORAGE_SERVER_MAX; kvServerNum+=5) {
                 for (int cacheSize = 50; cacheSize <= CACHE_SIZE_MAX; cacheSize += 50) {
-                    for (int kvClientNum = 5, step = 5; kvClientNum <= KVCLIENT_MAX; kvClientNum += step) {
+                    for (int kvClientNum = 5; kvClientNum <= KVCLIENT_MAX; kvClientNum += 5) {
 
-                        System.out.println("Server Number: " + (3 + serverAdded) + " | " +
+                        System.out.println("Server Number: " + kvServerNum + " | " +
                                 "Cache Size: " + cacheSize + " | " +
                                 "Client Number: " + kvClientNum);
-                        for (int i = 0; i < step; i++) {
+                        for (int i = 0; i < 5; i++) {
                             kvClient = new KVStore("localhost", 50000);
                             kvClient.connect();
                             // warm up the storage service, try to hit all servers.
@@ -128,7 +128,7 @@ public class PerformanceCacheFIFOTest extends TestCase {
             }
         } catch (Exception e) {
             assertTrue(false);
-            System.out.println("None cache test failed " + e);
+            System.out.println("FIFO cache test failed " + e);
         }
     }
 }

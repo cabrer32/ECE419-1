@@ -28,7 +28,7 @@ public class PerformanceCacheNoneTest extends TestCase {
     @Before
     public void setUp() {
         ecsClient = new ECSClient("127.0.0.1",2181,"ecs.config");
-        ecsClient.addNodes(3, "None", 100);
+        ecsClient.addNodes(5, "None", 100);
         ecsClient.start();
     }
 
@@ -92,18 +92,19 @@ public class PerformanceCacheNoneTest extends TestCase {
         Random rand = new Random();
         KVStore kvClient;
         KVMessage kvMessage;
+
         try {
-            System.out.println("================= NONE CACHE =================");
+            System.out.println("================= None CACHE =================");
             System.out.println();
 
-            for (int serverAdded = 0; serverAdded < STORAGE_SERVER_MAX - 3; serverAdded++) {
+            for (int kvServerNum = 5; kvServerNum < STORAGE_SERVER_MAX; kvServerNum+=5) {
                 for (int cacheSize = 50; cacheSize <= CACHE_SIZE_MAX; cacheSize += 50) {
-                    for (int kvClientNum = 5, step = 5; kvClientNum <= KVCLIENT_MAX; kvClientNum += step) {
+                    for (int kvClientNum = 5; kvClientNum <= KVCLIENT_MAX; kvClientNum += 5) {
 
-                        System.out.println("Server Number: " + (3 + serverAdded) + " | " +
+                        System.out.println("Server Number: " + kvServerNum + " | " +
                                 "Cache Size: " + cacheSize + " | " +
                                 "Client Number: " + kvClientNum);
-                        for (int i = 0; i < step; i++) {
+                        for (int i = 0; i < 5; i++) {
                             kvClient = new KVStore("localhost", 50000);
                             kvClient.connect();
                             // warm up the storage service, try to hit all servers.

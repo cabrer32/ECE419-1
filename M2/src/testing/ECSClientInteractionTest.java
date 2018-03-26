@@ -49,13 +49,13 @@ public class ECSClientInteractionTest extends TestCase {
         KVMessage kvMessage = null;
         try {
             for (int i = 1; i <= 50; i++) {
-                kvClient.put("DataTransfer-" + Integer.toString(i), Integer.toString(i));
+                kvClient.put("LoadTest-" + Integer.toString(i), Integer.toString(i));
             }
             for (int i = 1; i <= 50; i++) {
-                kvMessage = kvClient.get("DataTransfer-" + Integer.toString(i));
+                kvMessage = kvClient.get("LoadTest-" + Integer.toString(i));
                 assertEquals("Load test failed!", kvMessage.getStatus(), StatusType.GET_SUCCESS);
             }
-            kvMessage = kvClient.get("DataTransfer-" + Integer.toString(51));
+            kvMessage = kvClient.get("LoadTest-" + Integer.toString(51));
             assertEquals("Load test failed!", kvMessage.getStatus(), StatusType.GET_ERROR);
         } catch (Exception e) {
             assertTrue("kvClient put key failed!", false);
