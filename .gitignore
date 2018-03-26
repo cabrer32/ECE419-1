@@ -17,3 +17,8 @@ M2/*.jar
 M2/KVDB/*
 M2/.idea/workspace.xml
 *.iml
+M4/.idea/*
+M4/bin/*
+M4/*.jar
+M4/KVDB/*
+M4/.idea/workspace.xml
