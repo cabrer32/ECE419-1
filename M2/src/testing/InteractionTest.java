@@ -23,7 +23,7 @@ public class InteractionTest extends TestCase {
 		ecsClient = new ECSClient("127.0.0.1",2181,"ecs.config");
 		ecsClient.addNodes(3, "None", 100);
 		ecsClient.start();
-		kvClient = new KVStore("localhost", 50000);
+		kvClient = new KVStore("localhost", 50007);
 		try {
 			kvClient.connect();
 		} catch (Exception e) {

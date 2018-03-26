@@ -57,13 +57,17 @@ public class ECSClientTest extends TestCase {
          */
         IECSNode node = ecsClient.getNodeByKey("25000000000000000000000000000000");
         assertNotNull("getNodeByKey() failed.", node);
-        assertTrue(node.getNodeName().equals(nodeNames[0]));
+
+        assertTrue(node.getNodeName().equals(nodeNames[1]));
+
+
         node = ecsClient.getNodeByKey("30000000000000000000000000000000");
         assertNotNull("getNodeByKey() failed.", node);
-        assertTrue(node.getNodeName().equals(nodeNames[1]));
+
+        assertTrue(node.getNodeName().equals(nodeNames[2]));
         node = ecsClient.getNodeByKey("40000000000000000000000000000000");
         assertNotNull("getNodeByKey() failed.", node);
-        assertTrue(node.getNodeName().equals(nodeNames[2]));
+        assertTrue(node.getNodeName().equals(nodeNames[3]));
 
         /**
          * removeNodes()

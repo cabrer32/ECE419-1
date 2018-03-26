@@ -422,7 +422,6 @@ public class KVServer implements IKVServer {
 
                 server.initKVServer(Integer.parseInt(args[3]), Integer.parseInt(args[5]), args[4]);
 
-
                 server.initZK();
 
                 server.run();

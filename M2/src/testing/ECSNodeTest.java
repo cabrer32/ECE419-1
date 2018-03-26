@@ -42,14 +42,5 @@ public class ECSNodeTest extends TestCase {
         int port = node.getNodePort();
         assertTrue(port == 50000);
     }
-
-    @Test
-    public void testGetHashRange() {
-
-        String range[] = node.getNodeHashRange();
-
-        assertTrue(range[0].equals("a"));
-        assertTrue(range[1].equals("z"));
-    }
-
+    
 }
