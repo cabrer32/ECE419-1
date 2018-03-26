@@ -26,13 +26,6 @@ public class ECSClientInteractionTest extends TestCase {
     @Before
     public void setUp() throws  Exception{
 
-        try {
-            new LogSetup("logs/testing/test.log", Level.ALL);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-
         ecsClient = new ECSClient("127.0.0.1",2181,"ecs.config");
         ecsClient.addNodes(3, "None", 100);
         ecsClient.start();
@@ -79,10 +72,6 @@ public class ECSClientInteractionTest extends TestCase {
 
         ArrayList<String> nodesRemoved = new ArrayList<>(originalNodesMap.keySet());
         nodesRemoved.remove("server8");
-        Iterator itr = addedNodes.iterator();
-        if (itr.hasNext()) {
-            nodesRemoved.add(((IECSNode) itr.next()).getNodeName());
-        }
 
         assertTrue("failed to remove nodes!", ecsClient.removeNodes(nodesRemoved));
 
@@ -91,7 +80,7 @@ public class ECSClientInteractionTest extends TestCase {
         try {
             for (int i = 1; i <= 10; i++) {
                 kvMessage  = kvClient.get("DataTransfer-" + Integer.toString(i));
-                assertTrue(kvMessage.getStatus() == StatusType.GET_SUCCESS);
+                assertTrue("key is " + i,kvMessage.getStatus() == StatusType.GET_SUCCESS);
             }
         } catch (Exception e) {
             assertTrue("kvClient get key failed!", false);

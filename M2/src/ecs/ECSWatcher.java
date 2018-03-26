@@ -114,8 +114,8 @@ public class ECSWatcher {
                             logger.info("Children Node Deleted at " + path);
                             awaitSemaphore.countDown();
                             break;
-
                         default:
+                            exists(path, this);
                             break;
                     }
 
