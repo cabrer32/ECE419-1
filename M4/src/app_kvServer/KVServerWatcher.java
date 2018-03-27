@@ -1,5 +1,7 @@
 package app_kvServer;
 
+import common.messages.KVMessage;
+import common.messages.Message;
 import common.messages.MetaData;
 import ecs.IECSNode;
 import org.apache.log4j.Level;
@@ -301,6 +303,17 @@ public class KVServerWatcher {
                                 return;
                             }
 
+                            if(data.substring(0,3).equals("#G#")){
+
+                                KVMessage message = gson.fromJson(data.substring(3),Message.class);
+
+                                KVMessage response = kvServer.responseGlobalService(message);
+
+                                writeData(path, gson.toJson(response));
+
+                                return;
+                            }
+
                             String[] pair = JsonToPair(data);
 
                             kvServer.DBput(pair[0], pair[1]);
@@ -507,6 +520,44 @@ public class KVServerWatcher {
         deleteNode(dest);
 
         logger.info("Done!");
+    }
+
+    KVMessage gService(KVMessage message, String target){
+        String dest = ROOT_PATH + "/" + target + "/" + kvServer.getName();
+
+        createPath(dest,"");
+
+        try{
+            CountDownLatch cl = new CountDownLatch(1);
+            cl.await(100, TimeUnit.MILLISECONDS);
+        }catch(Exception e){
+            logger.error("Cannot watch new data sema");
+        }
+
+        logger.info("Start requesting data from " + target + " with key " + message.getKey());
+
+
+        dataSemaphore = new CountDownLatch(1);
+
+        writeData(dest,  "G#G" + gson.toJson(message));
+
+        try{
+            if(dataSemaphore.await(1000, TimeUnit.MILLISECONDS))
+                logger.warn("Transfer time out! ");
+        }catch(Exception e){
+            logger.error("Cannot watch new data sema");
+        }
+
+        String data = readData(dest, null);
+
+        KVMessage m = gson.fromJson(data, Message.class);
+
+
+        deleteNode(dest);
+
+        logger.info("Done!");
+
+        return m;
     }
 
 

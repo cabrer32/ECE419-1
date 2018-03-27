@@ -77,6 +77,14 @@ public class ECS {
         } catch (NoSuchAlgorithmException e) {
             logger.error(e.getMessage());
         }
+
+        int i = 0;
+
+        for(IECSNode node : avaServer){
+            node.setLocation((int)(100 * Math.cos(2*3.14*i/avaServer.size())),
+                    (int)(100 * Math.sin(2*3.14*i/avaServer.size())));
+        }
+
     }
 
 

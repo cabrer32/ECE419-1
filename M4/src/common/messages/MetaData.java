@@ -41,7 +41,6 @@ public class MetaData implements IMetaData {
     }
 
 
-
     public TreeSet<IECSNode> getServerRepo() {
         return serverRepo;
     }
@@ -66,6 +65,26 @@ public class MetaData implements IMetaData {
         }
         return null;
     }
+
+
+    @Override
+    public IECSNode getServerByLocation(int x, int y) {
+
+        IECSNode result = serverRepo.first();
+
+        double shortestDis = 1000;
+
+        for (IECSNode node : serverRepo) {
+
+            double distance = Math.pow(node.getLocation()[0] - x, 2) + Math.pow(node.getLocation()[1] - y, 2);
+
+            if(distance < shortestDis)
+                result = node;
+        }
+
+        return result;
+    }
+
 
     @Override
     public String getPredecessor(String name) {
@@ -182,9 +201,9 @@ public class MetaData implements IMetaData {
         return list;
     }
 
-    public ArrayList<String> getNameList(){
+    public ArrayList<String> getNameList() {
         ArrayList<String> list = new ArrayList<>();
-        for(IECSNode node : serverRepo)
+        for (IECSNode node : serverRepo)
             list.add(node.getNodeName());
 
         return list;

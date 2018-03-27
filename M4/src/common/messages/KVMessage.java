@@ -43,4 +43,7 @@ public interface KVMessage {
      */
     public IECSNode getResponsibleServer();
 
+	public void setLocation(int x, int y);
+
+	public int[] getLocation();
 }

@@ -22,5 +22,9 @@ public interface IECSNode {
      */
     public String[] getNodeHashRange();
 
+    public void setLocation(int x, int y);
+
+    public int[] getLocation();
+
 
 }

@@ -2,6 +2,7 @@ package app_kvServer;
 
 import app_kvServer.Cache.*;
 
+import common.messages.KVMessage;
 import common.messages.MetaData;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
@@ -84,7 +85,7 @@ public class KVServer implements IKVServer {
 
     }
 
-    public void initZK(){
+    public void initZK() {
         //Initialize server watch
         this.zkWatch = new KVServerWatcher(logger, this, this.zkHostname + ":" + this.zkPort, this.name);
         this.zkWatch.init();
@@ -168,7 +169,16 @@ public class KVServer implements IKVServer {
         } catch (IOException e) {
             logger.error("Cannot write to file " + e);
         }
+    }
 
+    public String DBget(String key) {
+        try {
+            logger.debug("get from DB " + key);
+            return db.getKV(key);
+        } catch (IOException e) {
+            logger.error("Cannot write to file " + e);
+        }
+        return null;
     }
 
     @Override
@@ -266,7 +276,7 @@ public class KVServer implements IKVServer {
         db.putKV(key, value);
         logger.info("KV Operation (PUT) in STORAGE: KEY => " + key + ", VALUE => " + value);
 
-        if(replicas != null && zkWatch != null) {
+        if (replicas != null && zkWatch != null) {
 
 
             HashMap<String, String> map = new HashMap<>();
@@ -277,6 +287,31 @@ public class KVServer implements IKVServer {
             }
         }
     }
+
+    public KVMessage globalService(KVMessage message) {
+        String target = meta.getServerByKey(message.getKey()).getNodeName();
+
+        logger.info("Need to forward the request to other servers");
+
+        return zkWatch.gService(message, target);
+    }
+
+    public KVMessage responseGlobalService(KVMessage message) {
+
+        try {
+            ClientConnection t = new ClientConnection(null, this);
+            if (message.getStatus() == KVMessage.StatusType.GET)
+                return t.get(message.getKey(), message);
+            if (message.getStatus() == KVMessage.StatusType.PUT)
+                return t.put(message.getKey(), message.getValue(), message);
+        } catch (Exception e) {
+            logger.error("Error handle Global service");
+            return null;
+        }
+
+        return null;
+    }
+
 
     @Override
     public void clearCache() {
@@ -316,12 +351,11 @@ public class KVServer implements IKVServer {
                             + client.getInetAddress().getHostName()
                             + " on port " + client.getPort());
                 } catch (IOException e) {
-                    if(running) {
+                    if (running) {
                         logger.error("Error! " +
                                 "Unable to establish connection. " + e);
                         running = false;
-                    }
-                    else{
+                    } else {
                         logger.info("Socket closed");
                     }
 
@@ -392,14 +426,16 @@ public class KVServer implements IKVServer {
         return state;
     }
 
-    public KVServerWatcher getZkWatch(){return zkWatch;}
+    public KVServerWatcher getZkWatch() {
+        return zkWatch;
+    }
 
     @Override
     public boolean moveData(String[] hashRange, String targetName) throws Exception {
         try {
             HashMap<String, String> map = db.getRangeKV(hashRange);
 
-            zkWatch.moveData(map,targetName);
+            zkWatch.moveData(map, targetName);
 
             logger.debug("Removing data");
 
