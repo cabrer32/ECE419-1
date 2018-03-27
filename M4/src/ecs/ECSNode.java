@@ -12,6 +12,9 @@ public class ECSNode implements IECSNode, Comparable<ECSNode>{
     private int cachesize;
     private int port;
 
+    private int x;
+    private int y;
+
 
     public ECSNode (){}
 
@@ -20,6 +23,8 @@ public class ECSNode implements IECSNode, Comparable<ECSNode>{
         this.host = host;
         this.port = port;
         this.endingHashValue = endingHashValue;
+        this.x = x;
+        this.y = y;
     }
 
     @Override
@@ -41,6 +46,16 @@ public class ECSNode implements IECSNode, Comparable<ECSNode>{
     public String[] getNodeHashRange() {
         return new String[] {this.getStartingHashValue(), this.getEndingHashValue()};
     }
+
+    public void setLocation(int x, int y){
+        this.x = x;
+        this.y = y;
+    }
+
+    public int[] getLocation() {
+        return new int[] {this.x, this.y};
+    }
+
 
     public String getStartingHashValue() {
         return startingHashValue;

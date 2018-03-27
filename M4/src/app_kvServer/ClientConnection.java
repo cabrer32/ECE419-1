@@ -88,7 +88,7 @@ public class ClientConnection implements Runnable {
                         switch (msg.getStatus()) {
                             case GET:
                                 try {
-                                    response = get(msg.getKey());
+                                    response = get(msg.getKey(), msg);
                                 } catch (Exception e) {
                                     logger.error("Error! Unable to execute GET operation " + e);
                                     response = new Message(KVMessage.StatusType.GET_ERROR, msg.getKey(), msg.getValue());
@@ -96,7 +96,7 @@ public class ClientConnection implements Runnable {
                                 break;
                             case PUT:
                                 try {
-                                    response = put(msg.getKey(), msg.getValue());
+                                    response = put(msg.getKey(), msg.getValue(), msg);
                                 } catch (Exception e) {
                                     logger.error("Error! Unable to execute PUT operation " + e);
                                     response = new Message(KVMessage.StatusType.PUT_ERROR, msg.getKey(), msg.getValue());
@@ -140,28 +140,28 @@ public class ClientConnection implements Runnable {
 
     }
 
-    private boolean compare(String key){
+    private boolean compare(KVMessage message) {
+        MetaData meta = server.getMetaData();
 
-        try {
-
-            ECSNode node = (ECSNode) server.meta.getServerByKey(key);
-            return node.getNodeName().equals(server.getName());
-
-        }catch(Exception e){
-
-            logger.error("Cannot convert md5 " + e);
-
-        }
-        return false;
+        return meta.getServerByLocation(message.getLocation()[0], message.getLocation()[1]).getNodeName().equals(server.getName());
     }
 
-    private KVMessage get(String key) throws Exception {
+    private boolean responsible(KVMessage message) {
+        MetaData meta = server.getMetaData();
+
+        return meta.getServerByKey(message.getKey()).getNodeName().equals(server.getName());
+    }
+
+    public KVMessage get(String key, KVMessage message) throws Exception {
         if (key.equals("") || key.contains(" ") || key.length() > 20) {
             return new Message(KVMessage.StatusType.GET_ERROR, key, "");
         }
 
-        if(!compare(key)){
-            return new Message(KVMessage.StatusType.SERVER_NOT_RESPONSIBLE, key, MetaData.MetaToJson("N",server.getMetaData()));
+        if (!responsible(message)) {
+            if (!compare(message))
+                return new Message(KVMessage.StatusType.SERVER_NOT_RESPONSIBLE, key, MetaData.MetaToJson("N", server.getMetaData()));
+            else
+                return server.globalService(message);
         }
 
         String value = server.getKV(key);
@@ -171,14 +171,19 @@ public class ClientConnection implements Runnable {
             return new Message(KVMessage.StatusType.GET_SUCCESS, key, value);
     }
 
-    private KVMessage put(String key, String value) throws Exception {
+    public KVMessage put(String key, String value, KVMessage message) throws Exception {
         if (key.equals("") || key.contains(" ") || key.length() > 20 || (value != null && value.length() > 120000)) {
             return new Message(KVMessage.StatusType.PUT_ERROR, key, value);
         }
 
-        if(!compare(key)){
-            return new Message(KVMessage.StatusType.SERVER_NOT_RESPONSIBLE, key, MetaData.MetaToJson("N",server.getMetaData()));
+
+        if (!responsible(message)) {
+            if (!compare(message))
+                return new Message(KVMessage.StatusType.SERVER_NOT_RESPONSIBLE, key, MetaData.MetaToJson("N", server.getMetaData()));
+            else
+                return server.globalService(message);
         }
+
 
         //case when deleting
         if (value == null || value.equals("")) {

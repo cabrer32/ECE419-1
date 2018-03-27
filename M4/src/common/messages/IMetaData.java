@@ -9,6 +9,7 @@ public interface IMetaData {
     String getSuccessor(String name);
     String[] getHashRange(String name);
     ArrayList<IECSNode> getServerBetween(String predecessor, String name);
+    IECSNode getServerByLocation(int x, int y);
     IECSNode getNode(String name);
     ArrayList<String> getReplica(String name);
     void addNode(IECSNode node);
