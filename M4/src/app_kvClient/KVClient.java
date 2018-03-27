@@ -46,6 +46,20 @@ public class KVClient implements IKVClient, ClientSocketListener {
                     serverAddress = tokens[1];
                     serverPort = Integer.parseInt(tokens[2]);
                     newConnection(serverAddress, serverPort);
+                    System.out.println("====== WARNING: YOU HAVE TO LOG INTO THE SYSTEM TO DO ANY FURTHER OPERATIONS ======");
+                    System.out.println("Username: ");
+                    String username = stdin.readLine();
+                    System.out.println("Password: ");
+                    String password = stdin.readLine();
+                    while (!kvStore.checkUserAccount(username, password)) {
+                        System.out.println("====== WRONG USERNAME OR PASSWORD, PLEASE TRY AGAIN! ======");
+                        System.out.println("Username: ");
+                        username = stdin.readLine();
+                        System.out.println("Password: ");
+                        password = stdin.readLine();
+                    }
+                    kvStore.logIn(username);
+                    System.out.println("====== YOU HAVE SUCCESSFULLY LOG INTO THE SYSTEM AS" + username + " ======");
                 } catch(NumberFormatException nfe) {
                     printError("No valid address. Port must be a number!");
                     logger.info("Unable to parse argument <port>", nfe);
@@ -82,7 +96,7 @@ public class KVClient implements IKVClient, ClientSocketListener {
             }
 
         } else  if (tokens[0].equals("get")) {
-            if(tokens.length != 2) {
+            if (tokens.length != 2) {
                 printError("Usage: get <key>");
             } else {
                 if (kvStore != null) {
@@ -90,6 +104,23 @@ public class KVClient implements IKVClient, ClientSocketListener {
                 } else {
                     printError("Not connected!");
                 }
+            }
+
+        } else if(tokens[0].equals("signup")) {
+            try {
+                System.out.println("Username: ");
+                String username = stdin.readLine();
+                System.out.println("Password: ");
+                String password = stdin.readLine();
+                while (!kvStore.createUserAccount(username, password)) {
+                    System.out.println("====== USERNAME ALREADY EXISTS, PLEASE TRY OTHER USERNAME! ======");
+                    System.out.println("Username: ");
+                    username = stdin.readLine();
+                    System.out.println("Password: ");
+                    password = stdin.readLine();
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
             }
 
         } else if(tokens[0].equals("logLevel")) {

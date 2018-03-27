@@ -21,6 +21,9 @@ public class KVStore implements KVCommInterface {
     private Gson gson;
     private String firstServerName = "server8";
 
+    private boolean loggedIn = false;
+    private String username;
+
     private MetaData meta = null;
 
     private ClientSocketListener listener = null;
@@ -152,7 +155,7 @@ public class KVStore implements KVCommInterface {
     @Override
     public KVMessage put(String key, String value) throws IOException {
 
-        KVMessage msgReq = new Message(KVMessage.StatusType.PUT, key, value);
+        KVMessage msgReq = new Message(KVMessage.StatusType.PUT, this.username + key, value);
 
 
         KVMessage response = null;
@@ -169,7 +172,7 @@ public class KVStore implements KVCommInterface {
 
     @Override
     public KVMessage get(String key) throws IOException {
-        KVMessage msgReq = new Message(KVMessage.StatusType.GET, key, "");
+        KVMessage msgReq = new Message(KVMessage.StatusType.GET, this.username + key, "");
 
         KVMessage response = null;
 
@@ -182,4 +185,34 @@ public class KVStore implements KVCommInterface {
         return response;
     }
 
+    public void logIn(String username) {
+        this.username = username;
+        this.loggedIn = true;
+    }
+
+    public boolean checkUserAccount(String username, String password) {
+        try {
+            KVMessage kvMessage = this.get(username);
+            if (kvMessage.getValue().compareTo(password) == 0) {
+                return true;
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    public boolean createUserAccount(String username, String password) {
+        try {
+            KVMessage kvMessage = this.get(username);
+            if (kvMessage.getStatus() == KVMessage.StatusType.GET_SUCCESS) {
+                return false;
+            } else {
+                this.put(username, password);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return true;
+    }
 }
