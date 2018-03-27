@@ -28,6 +28,8 @@ public class KVStore implements KVCommInterface {
 
     private ClientSocketListener listener = null;
 
+    private int x,y;
+
 
     /**
      * Initialize KVStore with address and port of KVServer
@@ -43,8 +45,10 @@ public class KVStore implements KVCommInterface {
         gson = new Gson();
     }
 
-    public void addListener(ClientSocketListener listener) {
+    public void addListener(ClientSocketListener listener, int x, int y) {
         this.listener = listener;
+        this.x = x;
+        this.y = y;
     }
 
     public KVMessage sendMessage(CommunicationModule cm, KVMessage msgReq) throws IOException {
@@ -157,6 +161,7 @@ public class KVStore implements KVCommInterface {
 
         KVMessage msgReq = new Message(KVMessage.StatusType.PUT, this.username + key, value);
 
+        msgReq.setLocation(x,y);
 
         KVMessage response = null;
 
@@ -174,6 +179,8 @@ public class KVStore implements KVCommInterface {
     public KVMessage get(String key) throws IOException {
         KVMessage msgReq = new Message(KVMessage.StatusType.GET, this.username + key, "");
 
+        msgReq.setLocation(x,y);
+
         KVMessage response = null;
 
         while (response == null)
@@ -188,6 +195,9 @@ public class KVStore implements KVCommInterface {
     public void logIn(String username) {
         this.username = username;
         this.loggedIn = true;
+    }
+    public boolean isLoggedIn(){
+        return loggedIn;
     }
 
     public boolean checkUserAccount(String username, String password) {

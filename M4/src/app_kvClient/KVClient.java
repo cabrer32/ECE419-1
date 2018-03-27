@@ -13,7 +13,7 @@ import java.io.InputStreamReader;
 import java.net.UnknownHostException;
 
 public class KVClient implements IKVClient, ClientSocketListener {
-    private static Logger logger =  Logger.getRootLogger();
+    private static Logger logger = Logger.getRootLogger();
     private static final String PROMPT = "B9Client> ";
     private BufferedReader stdin;
     private KVStore kvStore = null;
@@ -23,7 +23,7 @@ public class KVClient implements IKVClient, ClientSocketListener {
     private int serverPort;
 
     public void run() {
-        while(!stop) {
+        while (!stop) {
             stdin = new BufferedReader(new InputStreamReader(System.in));
             System.out.print(PROMPT);
 
@@ -40,27 +40,14 @@ public class KVClient implements IKVClient, ClientSocketListener {
     public void handleCommand(String cmdLine) {
         String[] tokens = cmdLine.split("\\s+");
 
-        if (tokens[0].equals("connect")){
-            if(tokens.length == 3) {
-                try{
+        if (tokens[0].equals("connect")) {
+            if (tokens.length == 5) {
+                try {
                     serverAddress = tokens[1];
                     serverPort = Integer.parseInt(tokens[2]);
-                    newConnection(serverAddress, serverPort);
-                    System.out.println("====== WARNING: YOU HAVE TO LOG INTO THE SYSTEM TO DO ANY FURTHER OPERATIONS ======");
-                    System.out.println("Username: ");
-                    String username = stdin.readLine();
-                    System.out.println("Password: ");
-                    String password = stdin.readLine();
-                    while (!kvStore.checkUserAccount(username, password)) {
-                        System.out.println("====== WRONG USERNAME OR PASSWORD, PLEASE TRY AGAIN! ======");
-                        System.out.println("Username: ");
-                        username = stdin.readLine();
-                        System.out.println("Password: ");
-                        password = stdin.readLine();
-                    }
-                    kvStore.logIn(username);
-                    System.out.println("====== YOU HAVE SUCCESSFULLY LOG INTO THE SYSTEM AS" + username + " ======");
-                } catch(NumberFormatException nfe) {
+                    newConnection(serverAddress, serverPort, Integer.parseInt(tokens[3]), Integer.parseInt(tokens[4]));
+
+                } catch (NumberFormatException nfe) {
                     printError("No valid address. Port must be a number!");
                     logger.info("Unable to parse argument <port>", nfe);
                 } catch (UnknownHostException e) {
@@ -74,39 +61,51 @@ public class KVClient implements IKVClient, ClientSocketListener {
                 printError("Usage: connect <address> <port>");
             }
 
-        } else if(tokens[0].equals("disconnect")) {
+        } else if (tokens[0].equals("disconnect")) {
             disconnect();
 
-        } else  if (tokens[0].equals("put")) {
-            if(tokens.length == 1) {
+        } else if (tokens[0].equals("put")) {
+            if (tokens.length == 1) {
                 printError("Usage: put <key> <value>");
             } else {
                 if (kvStore != null) {
-                    StringBuilder msg = new StringBuilder();
-                    for (int i = 2; i < tokens.length; i++) {
-                        msg.append(tokens[i]);
-                        if (i != tokens.length - 1) {
-                            msg.append(" ");
+
+
+                    if (!kvStore.isLoggedIn())
+                        printError("Un authorized user!");
+                    else {
+                        StringBuilder msg = new StringBuilder();
+                        for (int i = 2; i < tokens.length; i++) {
+                            msg.append(tokens[i]);
+                            if (i != tokens.length - 1) {
+                                msg.append(" ");
+                            }
                         }
+                        put(tokens[1], msg.toString());
                     }
-                    put(tokens[1], msg.toString());
                 } else {
                     printError("Not connected!");
                 }
             }
 
-        } else  if (tokens[0].equals("get")) {
+        } else if (tokens[0].equals("get")) {
             if (tokens.length != 2) {
                 printError("Usage: get <key>");
             } else {
+
                 if (kvStore != null) {
-                    get(tokens[1]);
+                    if (!kvStore.isLoggedIn())
+                        printError("Un authorized user!");
+                    else
+                        get(tokens[1]);
                 } else {
                     printError("Not connected!");
                 }
+
+
             }
 
-        } else if(tokens[0].equals("signup")) {
+        } else if (tokens[0].equals("signup")) {
             try {
                 System.out.println("Username: ");
                 String username = stdin.readLine();
@@ -123,10 +122,29 @@ public class KVClient implements IKVClient, ClientSocketListener {
                 e.printStackTrace();
             }
 
-        } else if(tokens[0].equals("logLevel")) {
-            if(tokens.length == 2) {
+        } else if (tokens[0].equals("login")) {
+            try {
+                System.out.println("====== WARNING: YOU HAVE TO LOG INTO THE SYSTEM TO DO ANY FURTHER OPERATIONS ======");
+                System.out.println("Username: ");
+                String username = stdin.readLine();
+                System.out.println("Password: ");
+                String password = stdin.readLine();
+                while (!kvStore.checkUserAccount(username, password)) {
+                    System.out.println("====== WRONG USERNAME OR PASSWORD, PLEASE TRY AGAIN! ======");
+                    System.out.println("Username: ");
+                    username = stdin.readLine();
+                    System.out.println("Password: ");
+                    password = stdin.readLine();
+                }
+                kvStore.logIn(username);
+                System.out.println("====== YOU HAVE SUCCESSFULLY LOG INTO THE SYSTEM AS" + username + " ======");
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        } else if (tokens[0].equals("logLevel")) {
+            if (tokens.length == 2) {
                 String level = setLevel(tokens[1]);
-                if(level.equals(LogSetup.UNKNOWN_LEVEL)) {
+                if (level.equals(LogSetup.UNKNOWN_LEVEL)) {
                     printError("No valid log level!");
                     printPossibleLogLevels();
                 } else {
@@ -137,10 +155,10 @@ public class KVClient implements IKVClient, ClientSocketListener {
                 printError("Invalid number of parameters!");
             }
 
-        } else if(tokens[0].equals("help")) {
+        } else if (tokens[0].equals("help")) {
             printHelp();
 
-        } else if(tokens[0].equals("quit")) {
+        } else if (tokens[0].equals("quit")) {
             stop = true;
             disconnect();
             System.out.println(PROMPT + "Application exit!");
@@ -151,7 +169,7 @@ public class KVClient implements IKVClient, ClientSocketListener {
         }
     }
 
-    private void put(String key, String value){
+    private void put(String key, String value) {
         try {
             kvStore.put(key, value);
         } catch (IOException e) {
@@ -160,7 +178,7 @@ public class KVClient implements IKVClient, ClientSocketListener {
         }
     }
 
-    private void get(String msg){
+    private void get(String msg) {
         try {
             kvStore.get(msg);
         } catch (IOException e) {
@@ -170,11 +188,12 @@ public class KVClient implements IKVClient, ClientSocketListener {
     }
 
     private void disconnect() {
-        if(kvStore != null) {
+        if (kvStore != null) {
             kvStore.disconnect();
             kvStore = null;
         }
     }
+
     private void printResponse(KVMessage res) {
         System.out.println("Status: " + res.getStatus());
         System.out.println("Key: " + res.getKey());
@@ -215,25 +234,25 @@ public class KVClient implements IKVClient, ClientSocketListener {
 
     private String setLevel(String levelString) {
 
-        if(levelString.equals(Level.ALL.toString())) {
+        if (levelString.equals(Level.ALL.toString())) {
             logger.setLevel(Level.ALL);
             return Level.ALL.toString();
-        } else if(levelString.equals(Level.DEBUG.toString())) {
+        } else if (levelString.equals(Level.DEBUG.toString())) {
             logger.setLevel(Level.DEBUG);
             return Level.DEBUG.toString();
-        } else if(levelString.equals(Level.INFO.toString())) {
+        } else if (levelString.equals(Level.INFO.toString())) {
             logger.setLevel(Level.INFO);
             return Level.INFO.toString();
-        } else if(levelString.equals(Level.WARN.toString())) {
+        } else if (levelString.equals(Level.WARN.toString())) {
             logger.setLevel(Level.WARN);
             return Level.WARN.toString();
-        } else if(levelString.equals(Level.ERROR.toString())) {
+        } else if (levelString.equals(Level.ERROR.toString())) {
             logger.setLevel(Level.ERROR);
             return Level.ERROR.toString();
-        } else if(levelString.equals(Level.FATAL.toString())) {
+        } else if (levelString.equals(Level.FATAL.toString())) {
             logger.setLevel(Level.FATAL);
             return Level.FATAL.toString();
-        } else if(levelString.equals(Level.OFF.toString())) {
+        } else if (levelString.equals(Level.OFF.toString())) {
             logger.setLevel(Level.OFF);
             return Level.OFF.toString();
         } else {
@@ -241,34 +260,34 @@ public class KVClient implements IKVClient, ClientSocketListener {
         }
     }
 
-    private void printError(String error){
-        System.out.println(PROMPT + "Error! " +  error);
+    private void printError(String error) {
+        System.out.println(PROMPT + "Error! " + error);
     }
 
     @Override
-    public void newConnection(String hostname, int port) throws IOException{
+    public void newConnection(String hostname, int port, int x, int y) throws IOException {
         // TODO Auto-generated method stub
-        kvStore =  new KVStore(hostname, port);
-        kvStore.addListener(this);
+        kvStore = new KVStore(hostname, port);
+        kvStore.addListener(this, x, y);
         kvStore.connect();
     }
 
     @Override
-    public KVCommInterface getStore(){
+    public KVCommInterface getStore() {
         // TODO Auto-generated method stub
         return kvStore;
     }
 
     @Override
     public void handleNewMessage(String msg) {
-        if(!stop) {
+        if (!stop) {
             System.out.println(msg);
         }
     }
 
     @Override
     public void handleNewMessage(KVMessage msg) {
-        if(!stop) {
+        if (!stop) {
             System.out.println(msg.getStatus());
             System.out.println(msg.getKey());
             System.out.println(msg.getValue());
@@ -278,7 +297,7 @@ public class KVClient implements IKVClient, ClientSocketListener {
 
     @Override
     public void handleStatus(SocketStatus status) {
-        if(status == SocketStatus.CONNECTED) {
+        if (status == SocketStatus.CONNECTED) {
 
         } else if (status == SocketStatus.DISCONNECTED) {
             System.out.print(PROMPT);
@@ -295,6 +314,7 @@ public class KVClient implements IKVClient, ClientSocketListener {
 
     /**
      * Main entry point for the echo server application.
+     *
      * @param args contains the port number at args[0].
      */
     public static void main(String[] args) {
