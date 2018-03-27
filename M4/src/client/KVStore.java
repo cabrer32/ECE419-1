@@ -28,7 +28,7 @@ public class KVStore implements KVCommInterface {
 
     private ClientSocketListener listener = null;
 
-    private int x,y;
+    private int x, y;
 
 
     /**
@@ -74,8 +74,7 @@ public class KVStore implements KVCommInterface {
                 response = sendMessage(communicationModules.get(firstServerName), msg);
             } else {
 
-                IECSNode node = meta.getServerByKey(msg.getKey());
-
+                IECSNode node = meta.getServerByLocation(x, y);
 
                 if (node == null) {
                     node = meta.getServerRepo().first();
@@ -99,6 +98,7 @@ public class KVStore implements KVCommInterface {
                     meta = MetaData.JsonToMeta(response.getValue());
                     return handleServerLogic(msg);
             }
+
         } catch (IOException e) {
             communicationModules.remove(serverName);
             if (meta != null)
@@ -113,10 +113,7 @@ public class KVStore implements KVCommInterface {
     private void connectTo(CommunicationModule ci) throws IOException {
         ci.connect();
         ci.setStream();
-        String welcomeMsg = ci.receiveMessage();
-        if (listener != null) {
-            listener.handleNewMessage(welcomeMsg);
-        }
+        ci.receiveMessage();
     }
 
 
@@ -127,6 +124,13 @@ public class KVStore implements KVCommInterface {
             CommunicationModule ci = communicationModules.values().iterator().next();
             connectTo(ci);
         }
+
+        this.get("testing");
+
+        if (meta == null)
+            System.out.println("You have connected to the nearest server : " + firstServerName);
+        else
+            System.out.println("You have connected to the nearest server : " + meta.getServerByLocation(x, y).getNodeName());
     }
 
     @Override
@@ -158,17 +162,18 @@ public class KVStore implements KVCommInterface {
 
     @Override
     public KVMessage put(String key, String value) throws IOException {
+        key += (username == null) ? "" : username;
 
-        KVMessage msgReq = new Message(KVMessage.StatusType.PUT, this.username + key, value);
+        KVMessage msgReq = new Message(KVMessage.StatusType.PUT, key, value);
 
-        msgReq.setLocation(x,y);
+        msgReq.setLocation(x, y);
 
         KVMessage response = null;
 
         while (response == null)
             response = handleServerLogic(msgReq);
 
-        if (listener != null) {
+        if (listener != null && loggedIn) {
             listener.handleNewMessage(response.getStatus().toString());
         }
         return response;
@@ -177,26 +182,30 @@ public class KVStore implements KVCommInterface {
 
     @Override
     public KVMessage get(String key) throws IOException {
-        KVMessage msgReq = new Message(KVMessage.StatusType.GET, this.username + key, "");
+        key += (username == null) ? "" : username;
 
-        msgReq.setLocation(x,y);
+        KVMessage msgReq = new Message(KVMessage.StatusType.GET, key, "");
+
+        msgReq.setLocation(x, y);
 
         KVMessage response = null;
 
         while (response == null)
             response = handleServerLogic(msgReq);
 
-        if (listener != null) {
+        if (listener != null && loggedIn) {
             listener.handleNewMessage(response.getStatus().toString() + " " + response.getValue());
         }
         return response;
     }
 
     public void logIn(String username) {
+        System.out.println("====== YOU HAVE SUCCESSFULLY LOG INTO THE SYSTEM AS " + username + " ======");
         this.username = username;
         this.loggedIn = true;
     }
-    public boolean isLoggedIn(){
+
+    public boolean isLoggedIn() {
         return loggedIn;
     }
 

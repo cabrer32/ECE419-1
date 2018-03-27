@@ -41,11 +41,11 @@ public class KVClient implements IKVClient, ClientSocketListener {
         String[] tokens = cmdLine.split("\\s+");
 
         if (tokens[0].equals("connect")) {
-            if (tokens.length == 5) {
+            if (tokens.length == 3) {
                 try {
-                    serverAddress = tokens[1];
-                    serverPort = Integer.parseInt(tokens[2]);
-                    newConnection(serverAddress, serverPort, Integer.parseInt(tokens[3]), Integer.parseInt(tokens[4]));
+//                    serverAddress = tokens[1];
+//                    serverPort = Integer.parseInt(tokens[2]);
+                    newConnection("127.0.0.1", 50007, Integer.parseInt(tokens[1]), Integer.parseInt(tokens[2]));
 
                 } catch (NumberFormatException nfe) {
                     printError("No valid address. Port must be a number!");
@@ -118,6 +118,7 @@ public class KVClient implements IKVClient, ClientSocketListener {
                     System.out.println("Password: ");
                     password = stdin.readLine();
                 }
+                kvStore.logIn(username);
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -129,15 +130,18 @@ public class KVClient implements IKVClient, ClientSocketListener {
                 String username = stdin.readLine();
                 System.out.println("Password: ");
                 String password = stdin.readLine();
+                boolean back = false;
                 while (!kvStore.checkUserAccount(username, password)) {
                     System.out.println("====== WRONG USERNAME OR PASSWORD, PLEASE TRY AGAIN! ======");
                     System.out.println("Username: ");
                     username = stdin.readLine();
+                    if(username.equals("back")) {back = true; break;}
                     System.out.println("Password: ");
                     password = stdin.readLine();
                 }
-                kvStore.logIn(username);
-                System.out.println("====== YOU HAVE SUCCESSFULLY LOG INTO THE SYSTEM AS" + username + " ======");
+                if(!back) {
+                    kvStore.logIn(username);
+                }
             } catch (IOException e) {
                 e.printStackTrace();
             }

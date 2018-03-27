@@ -296,20 +296,26 @@ public class KVServerWatcher {
                     switch (eventType) {
                         case NodeDataChanged:
 
-                            String data = readData(path, this);
+                            String data = readData(path, null);
 
                             if(data.equals("")){
                                 logger.debug("Irrelevant change.");
                                 return;
                             }
 
-                            if(data.substring(0,3).equals("#G#")){
+                            if(data.substring(0,3).equals("G#G")){
 
-                                KVMessage message = gson.fromJson(data.substring(3),Message.class);
+                                logger.debug("Request is "+ data);
+
+                                KVMessage message = gson.fromJson(data.substring(3), Message.class);
 
                                 KVMessage response = kvServer.responseGlobalService(message);
 
+                                logger.info("Response is " + gson.toJson(response));
+
                                 writeData(path, gson.toJson(response));
+
+                                exists(path, this);
 
                                 return;
                             }
@@ -327,8 +333,8 @@ public class KVServerWatcher {
                                 logger.error("Cannot watch new data sema");
                             }
 
-
                             writeData(path, "");
+                            exists(path,this);
                         default:
                             exists(path, this);
                             logger.debug("Irrelevant change.");
@@ -473,6 +479,8 @@ public class KVServerWatcher {
 
 
     void moveData(Map<String, String> map, String targetName) {
+        logger.info("Start transfering data to " + targetName + " with size " + map.size());
+
         String dest = ROOT_PATH + "/" + targetName + "/" + kvServer.getName();
 
         Iterator it = map.entrySet().iterator();
@@ -487,9 +495,6 @@ public class KVServerWatcher {
             logger.error("Cannot watch new data sema");
         }
 
-
-        logger.info("Start transfering data to " + targetName + " with size " + map.size());
-
         while (it.hasNext()) {
             Map.Entry<String, String> kv = (Map.Entry<String, String>) it.next();
 
@@ -502,7 +507,7 @@ public class KVServerWatcher {
             exists(dest, transferWatcher);
 
             try{
-                if(dataSemaphore.await(1000, TimeUnit.MILLISECONDS))
+                if(!dataSemaphore.await(1000, TimeUnit.MILLISECONDS))
                     logger.warn("Transfer time out! ");
             }catch(Exception e){
                 logger.error("Cannot watch new data sema");
@@ -540,15 +545,18 @@ public class KVServerWatcher {
         dataSemaphore = new CountDownLatch(1);
 
         writeData(dest,  "G#G" + gson.toJson(message));
+        exists(dest, transferWatcher);
 
         try{
-            if(dataSemaphore.await(1000, TimeUnit.MILLISECONDS))
+            if(!dataSemaphore.await(5000, TimeUnit.MILLISECONDS))
                 logger.warn("Transfer time out! ");
         }catch(Exception e){
             logger.error("Cannot watch new data sema");
         }
 
         String data = readData(dest, null);
+
+        logger.debug("Response is " + data);
 
         KVMessage m = gson.fromJson(data, Message.class);
 

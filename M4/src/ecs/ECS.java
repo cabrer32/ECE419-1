@@ -15,7 +15,7 @@ import java.util.*;
 
 public class ECS {
     private static Logger logger = Logger.getRootLogger();
-    private static final String SCRIPT_TEXT = "ssh -n %s nohup java -jar /Users/pannnnn/UTcourses/ECE419/Milestones/ece419/M4/m2-server.jar %s %s %s %s %s %s &";
+    private static final String SCRIPT_TEXT = "ssh -n %s nohup java -jar /Users/wuqili/Desktop/ECE419/M4/m2-server.jar %s %s %s %s %s %s &";
 
     private ECSWatcher zkWatch;
 
@@ -48,6 +48,8 @@ public class ECS {
         meta = new MetaData(new TreeSet<IECSNode>());
         detectors = new HashMap<>();
         this.client = client;
+
+        zkWatch.cleanNodes(avaServer);
     }
 
     private void loadFile(String configFileName) {
@@ -81,8 +83,9 @@ public class ECS {
         int i = 0;
 
         for(IECSNode node : avaServer){
-            node.setLocation((int)(100 * Math.cos(2*3.14*i/avaServer.size())),
-                    (int)(100 * Math.sin(2*3.14*i/avaServer.size())));
+            node.setLocation((int)(50 * Math.cos(2*3.14*i/avaServer.size()) + 50),
+                    (int)(50 * Math.sin(2*3.14*i/avaServer.size())) + 50);
+            i++;
         }
 
     }

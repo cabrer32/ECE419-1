@@ -266,4 +266,30 @@ public class ECSWatcher {
             return false;
         }
     }
+
+
+    public boolean cleanNodes(TreeSet<IECSNode> serverRepoTaken) {
+
+        logger.info("Cleaning all nodes");
+
+        try {
+            if (this.zk.exists(ROOT_PATH, false) == null)
+                return true;
+
+            for (IECSNode node : serverRepoTaken) {
+                int i = 0;
+
+                while(exists(CHILDREN_PATH + node.getNodeName(),null) != null &&
+                        !deleteNode(CHILDREN_PATH + node.getNodeName())) {
+                    deleteNode(CHILDREN_PATH + node.getNodeName() + "/server" + i);
+                    i++;
+                }
+            }
+            logger.info("Done");
+            return true;
+        } catch (Exception e) {
+            logger.error("Cannot Do ZK operation");
+            return false;
+        }
+    }
 }

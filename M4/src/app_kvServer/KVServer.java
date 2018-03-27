@@ -278,14 +278,18 @@ public class KVServer implements IKVServer {
 
         if (replicas != null && zkWatch != null) {
 
-
             HashMap<String, String> map = new HashMap<>();
             map.put(key, value);
+            logger.info("Moving to replicas");
 
-            for (String name : replicas) {
-                zkWatch.moveData(map, name);
-            }
+            DataMover dm = new DataMover(zkWatch,map,this);
+
+            new Thread(dm).start();
         }
+    }
+
+    public ArrayList<String> getReplicas() {
+        return replicas;
     }
 
     public KVMessage globalService(KVMessage message) {
