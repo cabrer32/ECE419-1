@@ -3,6 +3,7 @@ package app_kvServer;
 import app_kvServer.Cache.*;
 
 import common.messages.KVMessage;
+import common.messages.Message;
 import common.messages.MetaData;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
@@ -50,6 +51,11 @@ public class KVServer implements IKVServer {
      * cache
      */
     private KVCache cache;
+
+    /**
+     * cache for global service
+     */
+    private KVCache gCache;
 
     /**
      * file system database
@@ -120,12 +126,15 @@ public class KVServer implements IKVServer {
         switch (cacheStrategy) {
             case LRU:
                 cache = new LRUCache(cacheSize);
+                gCache = new LRUCache(cacheSize);
                 break;
             case FIFO:
                 cache = new FIFOCache(cacheSize);
+                gCache = new FIFOCache(cacheSize);
                 break;
             case LFU:
                 cache = new LFUCache(cacheSize);
+                gCache = new LFUCache(cacheSize);
                 break;
             case None:
                 break;
@@ -282,7 +291,7 @@ public class KVServer implements IKVServer {
             map.put(key, value);
             logger.info("Moving to replicas");
 
-            DataMover dm = new DataMover(zkWatch,map,this);
+            DataMover dm = new DataMover(zkWatch, map, this);
 
             new Thread(dm).start();
         }
@@ -304,10 +313,28 @@ public class KVServer implements IKVServer {
 
         try {
             ClientConnection t = new ClientConnection(null, this);
-            if (message.getStatus() == KVMessage.StatusType.GET)
-                return t.get(message.getKey(), message);
-            if (message.getStatus() == KVMessage.StatusType.PUT)
-                return t.put(message.getKey(), message.getValue(), message);
+            if (message.getStatus() == KVMessage.StatusType.GET) {
+                if (gCache.getKV(message.getKey()) != null) {
+                    return new Message(KVMessage.StatusType.GET_SUCCESS, message.getKey(), gCache.getKV(message.getKey()));
+
+                } else {
+                    KVMessage response = t.get(message.getKey(), message);
+                    if (response.getStatus() == KVMessage.StatusType.GET_SUCCESS)
+                        gCache.putKV(response.getKey(), response.getValue());
+                    return response;
+                }
+            }
+
+            if (message.getStatus() == KVMessage.StatusType.PUT){
+
+                KVMessage response = t.put(message.getKey(), message.getValue(), message);
+                if(response.getStatus() == KVMessage.StatusType.PUT_SUCCESS || response.getStatus() == KVMessage.StatusType.DELETE_SUCCESS ||
+                        response.getStatus() == KVMessage.StatusType.DELETE_SUCCESS)
+                    gCache.putKV(response.getKey(), response.getValue());
+
+                return response;
+            }
+
         } catch (Exception e) {
             logger.error("Error handle Global service");
             return null;
