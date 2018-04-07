@@ -111,14 +111,18 @@ public class KVClient implements IKVClient, ClientSocketListener {
                 String username = stdin.readLine();
                 System.out.println("Password: ");
                 String password = stdin.readLine();
-                while (!kvStore.createUserAccount(username, password)) {
-                    System.out.println("====== USERNAME ALREADY EXISTS, PLEASE TRY OTHER USERNAME! ======");
-                    System.out.println("Username: ");
-                    username = stdin.readLine();
-                    System.out.println("Password: ");
-                    password = stdin.readLine();
+                if (kvStore != null) {
+                    while (!kvStore.createUserAccount(username, password)) {
+                        System.out.println("====== USERNAME ALREADY EXISTS, PLEASE TRY OTHER USERNAME! ======");
+                        System.out.println("Username: ");
+                        username = stdin.readLine();
+                        System.out.println("Password: ");
+                        password = stdin.readLine();
+                    }
+                    kvStore.logIn(username);
+                } else {
+                    System.out.println("====== Please connect to a server first! ======");
                 }
-                kvStore.logIn(username);
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -131,16 +135,20 @@ public class KVClient implements IKVClient, ClientSocketListener {
                 System.out.println("Password: ");
                 String password = stdin.readLine();
                 boolean back = false;
-                while (!kvStore.checkUserAccount(username, password)) {
-                    System.out.println("====== WRONG USERNAME OR PASSWORD, PLEASE TRY AGAIN! ======");
-                    System.out.println("Username: ");
-                    username = stdin.readLine();
-                    if(username.equals("back")) {back = true; break;}
-                    System.out.println("Password: ");
-                    password = stdin.readLine();
-                }
-                if(!back) {
-                    kvStore.logIn(username);
+                if (kvStore != null) {
+                    while (!kvStore.checkUserAccount(username, password)) {
+                        System.out.println("====== WRONG USERNAME OR PASSWORD, PLEASE TRY AGAIN! ======");
+                        System.out.println("Username: ");
+                        username = stdin.readLine();
+                        if(username.equals("back")) {back = true; break;}
+                        System.out.println("Password: ");
+                        password = stdin.readLine();
+                    }
+                    if(!back) {
+                        kvStore.logIn(username);
+                    }
+                } else {
+                    System.out.println("====== Please connect to a server first! ======");
                 }
             } catch (IOException e) {
                 e.printStackTrace();
