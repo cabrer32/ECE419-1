@@ -304,13 +304,13 @@ public class KVServer implements IKVServer {
     public KVMessage globalService(KVMessage message) {
         String target = meta.getServerByKey(message.getKey()).getNodeName();
 
-        if (message.getStatus() == KVMessage.StatusType.GET) {
+        if (message.getStatus() == KVMessage.StatusType.GET && cacheStrategy != CacheStrategy.None) {
             if (gCache.getKV(message.getKey()) != null) {
                 return new Message(KVMessage.StatusType.GET_SUCCESS, message.getKey(), gCache.getKV(message.getKey()));
 
             } else {
                 KVMessage response = zkWatch.gService(message, target);
-                if (response.getStatus() == KVMessage.StatusType.GET_SUCCESS)
+                if (response.getStatus() == KVMessage.StatusType.GET_SUCCESS && cacheStrategy != CacheStrategy.None)
                     gCache.putKV(response.getKey(), response.getValue());
                 return response;
             }
@@ -319,8 +319,8 @@ public class KVServer implements IKVServer {
         if (message.getStatus() == KVMessage.StatusType.PUT){
 
             KVMessage response = zkWatch.gService(message, target);
-            if(response.getStatus() == KVMessage.StatusType.PUT_SUCCESS || response.getStatus() == KVMessage.StatusType.DELETE_SUCCESS ||
-                    response.getStatus() == KVMessage.StatusType.DELETE_SUCCESS)
+            if(cacheStrategy != CacheStrategy.None && (response.getStatus() == KVMessage.StatusType.PUT_SUCCESS || response.getStatus() == KVMessage.StatusType.DELETE_SUCCESS ||
+                    response.getStatus() == KVMessage.StatusType.DELETE_SUCCESS))
                 gCache.putKV(response.getKey(), response.getValue());
 
             return response;
