@@ -304,6 +304,28 @@ public class KVServer implements IKVServer {
     public KVMessage globalService(KVMessage message) {
         String target = meta.getServerByKey(message.getKey()).getNodeName();
 
+        if (message.getStatus() == KVMessage.StatusType.GET) {
+            if (gCache.getKV(message.getKey()) != null) {
+                return new Message(KVMessage.StatusType.GET_SUCCESS, message.getKey(), gCache.getKV(message.getKey()));
+
+            } else {
+                KVMessage response = zkWatch.gService(message, target);
+                if (response.getStatus() == KVMessage.StatusType.GET_SUCCESS)
+                    gCache.putKV(response.getKey(), response.getValue());
+                return response;
+            }
+        }
+
+        if (message.getStatus() == KVMessage.StatusType.PUT){
+
+            KVMessage response = zkWatch.gService(message, target);
+            if(response.getStatus() == KVMessage.StatusType.PUT_SUCCESS || response.getStatus() == KVMessage.StatusType.DELETE_SUCCESS ||
+                    response.getStatus() == KVMessage.StatusType.DELETE_SUCCESS)
+                gCache.putKV(response.getKey(), response.getValue());
+
+            return response;
+        }
+
         logger.info("Need to forward the request to other servers");
 
         return zkWatch.gService(message, target);
@@ -313,27 +335,10 @@ public class KVServer implements IKVServer {
 
         try {
             ClientConnection t = new ClientConnection(null, this);
-            if (message.getStatus() == KVMessage.StatusType.GET) {
-                if (gCache.getKV(message.getKey()) != null) {
-                    return new Message(KVMessage.StatusType.GET_SUCCESS, message.getKey(), gCache.getKV(message.getKey()));
-
-                } else {
-                    KVMessage response = t.get(message.getKey(), message);
-                    if (response.getStatus() == KVMessage.StatusType.GET_SUCCESS)
-                        gCache.putKV(response.getKey(), response.getValue());
-                    return response;
-                }
-            }
-
-            if (message.getStatus() == KVMessage.StatusType.PUT){
-
-                KVMessage response = t.put(message.getKey(), message.getValue(), message);
-                if(response.getStatus() == KVMessage.StatusType.PUT_SUCCESS || response.getStatus() == KVMessage.StatusType.DELETE_SUCCESS ||
-                        response.getStatus() == KVMessage.StatusType.DELETE_SUCCESS)
-                    gCache.putKV(response.getKey(), response.getValue());
-
-                return response;
-            }
+            if (message.getStatus() == KVMessage.StatusType.GET)
+                return t.get(message.getKey(), message);
+            if (message.getStatus() == KVMessage.StatusType.PUT)
+                return t.put(message.getKey(), message.getValue(), message);
 
         } catch (Exception e) {
             logger.error("Error handle Global service");
