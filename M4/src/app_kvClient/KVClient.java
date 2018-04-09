@@ -72,7 +72,7 @@ public class KVClient implements IKVClient, ClientSocketListener {
 
 
                     if (!kvStore.isLoggedIn())
-                        printError("Un authorized user!");
+                        printError("Unauthorized user!");
                     else {
                         StringBuilder msg = new StringBuilder();
                         for (int i = 2; i < tokens.length; i++) {
